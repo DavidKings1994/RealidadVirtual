@@ -1,0 +1,82 @@
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-size: 14px;
+    font-family: OpenSans-SemiBold !important;
+    line-height: 1.8 !important;
+}
+
+@font-face {
+    font-family: OpenSans-Bold;
+    src: url(fonts/open-sans/OpenSans-Bold.ttf);
+}
+
+@font-face {
+    font-family: OpenSans-Semibold;
+    src: url(fonts/open-sans/OpenSans-Semibold.ttf);
+}
+
+@font-face {
+    font-family: OpenSans-Light;
+    src: url(fonts/open-sans/OpenSans-Light.ttf);
+}
+
+@font-face {
+    font-family: genericons-regular-webfont;
+    src: url(fonts/generic-icons/genericons-regular-webfont.ttf);
+}
+
+#gameContainer {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+}
+
+#blocker, #scoreContainer {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    top: 0;
+    z-index: 1;
+}
+
+#scoreContainer {
+    top: 0;
+    right: 0;
+    width: 200px;
+    height: 50px;
+    display: none;
+    font-size: 20px;
+}
+
+#instructions, #score {
+    width: 100%;
+    height: 100%;
+    display: -webkit-box;
+    display: -moz-box;
+    display: box;
+    -webkit-box-orient: horizontal;
+    -moz-box-orient: horizontal;
+    box-orient: horizontal;
+    -webkit-box-pack: center;
+    -moz-box-pack: center;
+    box-pack: center;
+    -webkit-box-align: center;
+    -moz-box-align: center;
+    box-align: center;
+    color: #ffffff;
+    text-align: center;
+    cursor: pointer;
+}
+
+#score {
+    width: 100%;
+    height: 60%;
+}
+
+#instructions span {
+    font-size: 40px;
+}

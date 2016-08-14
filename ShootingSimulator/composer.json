@@ -1,0 +1,14 @@
+{
+    "name": "david-reyes/realidad-virtual",
+    "description": "proyecto final para la materia de realidad virtual de la carrera de lmad en fcfm",
+    "type": "project",
+    "require": {
+        "deviservi/nusoap": "^1.123"
+    },
+    "authors": [
+        {
+            "name": "David Reyes",
+            "email": "david.reyes.1994@hotmail.com"
+        }
+    ]
+}

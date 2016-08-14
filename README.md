@@ -22,6 +22,6 @@ for Chrome packaged apps.
 * [Serial API](http://developer.chrome.com/apps/app.hardware.html#serial)
 * [Runtime](http://developer.chrome.com/apps/app.runtime.html)
 * [Window](http://developer.chrome.com/apps/app.window.html)
-     
+
 ## Screenshot
-![screenshot](/samples/serial/ledtoggle/assets/screenshot_1280_800.png)
+![screenshot](assets/screenshot_1280_800.png)
