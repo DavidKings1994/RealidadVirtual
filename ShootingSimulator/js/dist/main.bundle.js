@@ -46,7 +46,9 @@
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1), __webpack_require__(2)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, KingsGame) {
 		$(document).ready(function() {
-			$("#gameContainer").initGame({ pointerLocked: false });
+			$("#gameContainer").initGame({
+				pointerLocked: true
+			});
 	    });
 	}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
@@ -10117,20 +10119,24 @@
 		__webpack_require__(8);
 		__webpack_require__(9);
 
-		__webpack_require__(10);
-		__webpack_require__(11);
-		__webpack_require__(12);
+	    __webpack_require__(10);
+	    __webpack_require__(11);
+	    __webpack_require__(12);
+
 		__webpack_require__(13);
 		__webpack_require__(14);
 		__webpack_require__(15);
+		__webpack_require__(16);
+		__webpack_require__(17);
+		__webpack_require__(18);
 
-	    __webpack_require__(16);
-	    __webpack_require__(17);
-	    __webpack_require__(18);
-	    var Detector = __webpack_require__(19);
-	    var LoadingScreen = __webpack_require__( 20);
-	    var GameOverScreen = __webpack_require__( 21);
-	    var Stats = __webpack_require__(24);
+	    __webpack_require__(19);
+	    __webpack_require__(20);
+	    __webpack_require__(21);
+	    var Detector = __webpack_require__(22);
+	    var LoadingScreen = __webpack_require__( 23);
+	    var GameOverScreen = __webpack_require__( 24);
+	    var Stats = __webpack_require__(27);
 
 	    var KingsGame = ( function() {
 	        function KingsGame() {
@@ -11106,80 +11112,60 @@
 	    KingsGame.prototype.update = function () {
 	        KingsGame.prototype.updatePhysics();
 	        var elements = _.toArray(KingsGame.gameobjects);
-	        for (var i = 0; i < elements.length; i++) {
-	            elements[i].update();
+	        if(KingsGame.ready) {
+	            for (var i = 0; i < elements.length; i++) {
+	                elements[i].update();
+	            }
 	        }
-	        if( KingsGame.road.insideRoad(KingsGame.gameobjects.player.position) ) {
-	            KingsGame.fireBall.position.y = Math.min(KingsGame.gameobjects.player.position.y+100,KingsGame.fireBall.position.y);
-	            KingsGame.score = Math.max(Math.floor((KingsGame.gameobjects.player.position.y * -1) / 10), KingsGame.score);
-	            puntuacion.innerHTML = KingsGame.score;
-	            KingsGame.road.update();
-	            KingsGame.sky.position.set(
-	                KingsGame.gameobjects.player.position.x,
-	                KingsGame.gameobjects.player.position.y,
-	                0
-	            );
-	            switch (KingsGame.camera.type) {
-	                case KingsGame.CAMERA_TYPES.firstPerson: {
-	                    var fixedVec = new THREE.Vector3(0,-1.5,1.5);
-	                    fixedVec.applyQuaternion(KingsGame.gameobjects.player.body.quaternion);
-	                    fixedVec.add(KingsGame.gameobjects.player.position);
-	                    KingsGame.camera.position.set( fixedVec.x, fixedVec.y, fixedVec.z );
-	                    fixedVec.add(KingsGame.gameobjects.player.getDirection());
-	                    KingsGame.camera.lookAt(fixedVec);
-	                    var up = new THREE.Vector3(0,1,0);
-	                    up.applyQuaternion(KingsGame.gameobjects.player.model.quaternion);
-	                    KingsGame.camera.up.copy(up);
-	                    break;
-	                }
-	                case KingsGame.CAMERA_TYPES.thirdPerson: {
-	                    var fixedVec = new THREE.Vector3(0,0,3);
-	                    fixedVec.applyQuaternion(KingsGame.gameobjects.player.body.quaternion);
-	                    fixedVec.add(KingsGame.gameobjects.player.position);
-	                    fixedVec.add(KingsGame.gameobjects.player.getDirection().negate());
-	                    KingsGame.camera.position.set( fixedVec.x, fixedVec.y, fixedVec.z );
-	                    KingsGame.camera.lookAt(KingsGame.gameobjects.player.position);
-	                    KingsGame.camera.up.set(0,0,1);
-	                    break;
-	                }
-	                case KingsGame.CAMERA_TYPES.upView: {
-	                    var fixedVec = KingsGame.gameobjects.player.position.clone();
-	                    fixedVec.applyQuaternion(KingsGame.gameobjects.player.body.quaternion);
-	                    KingsGame.camera.position.set(
-	                        KingsGame.gameobjects.player.position.x,
-	                        KingsGame.gameobjects.player.position.y - 14,
-	                        KingsGame.gameobjects.player.position.z + 30
-	                    );
-	                    var vec = new THREE.Vector3(
-	                        KingsGame.gameobjects.player.position.x,
-	                        KingsGame.gameobjects.player.position.y - 15,
-	                        KingsGame.gameobjects.player.position.z
-	                    );
-	                    KingsGame.camera.lookAt(vec);
-	                    KingsGame.camera.up.set(0,0,1);
-	                    break;
-	                }
+
+	        //KingsGame.road.update();
+	        KingsGame.sky.position.set(
+	            KingsGame.gameobjects.player.position.x,
+	            KingsGame.gameobjects.player.position.y,
+	            0
+	        );
+	        switch (KingsGame.camera.type) {
+	            case KingsGame.CAMERA_TYPES.firstPerson: {
+	                var fixedVec = new THREE.Vector3(0,-1.5,1.5);
+	                fixedVec.applyQuaternion(KingsGame.gameobjects.player.body.quaternion);
+	                fixedVec.add(KingsGame.gameobjects.player.position);
+	                KingsGame.camera.position.set( fixedVec.x, fixedVec.y, fixedVec.z );
+	                fixedVec.add(KingsGame.gameobjects.player.getDirection());
+	                KingsGame.camera.lookAt(fixedVec);
+	                var up = new THREE.Vector3(0,1,0);
+	                up.applyQuaternion(KingsGame.gameobjects.player.model.quaternion);
+	                KingsGame.camera.up.copy(up);
+	                break;
 	            }
-	        } else {
-	            if(KingsGame.gameobjects.player.position.z < -15 && KingsGame.rain == null) {
-	                KingsGame.rain = new KingsGame.ParticleSystem({
-	                    sistemType: "fountain",
-	                    fountainHeight: 2,
-	                    position: KingsGame.gameobjects.player.position.clone(),
-	                    gravity: new THREE.Vector3(0,0,-0.08),
-	                    particleCount: 300,
-	                    radius: 0.5,
-	                    keepAlive: false,
-	                    size: 5
-	                });
-	            }
-	            if(KingsGame.rain != null) {
-	                KingsGame.rain.update();
-	                KingsGame.camera.lookAt(KingsGame.rain.position);
-	            }else {
+	            case KingsGame.CAMERA_TYPES.thirdPerson: {
+	                var fixedVec = new THREE.Vector3(0,0,3);
+	                fixedVec.applyQuaternion(KingsGame.gameobjects.player.body.quaternion);
+	                fixedVec.add(KingsGame.gameobjects.player.position);
+	                fixedVec.add(KingsGame.gameobjects.player.getDirection().negate());
+	                //KingsGame.camera.position.set( fixedVec.x, fixedVec.y, fixedVec.z );
 	                KingsGame.camera.lookAt(KingsGame.gameobjects.player.position);
+	                KingsGame.camera.up.set(0,0,1);
+	                break;
+	            }
+	            case KingsGame.CAMERA_TYPES.upView: {
+	                var fixedVec = KingsGame.gameobjects.player.position.clone();
+	                fixedVec.applyQuaternion(KingsGame.gameobjects.player.body.quaternion);
+	                KingsGame.camera.position.set(
+	                    KingsGame.gameobjects.player.position.x,
+	                    KingsGame.gameobjects.player.position.y - 14,
+	                    KingsGame.gameobjects.player.position.z + 30
+	                );
+	                var vec = new THREE.Vector3(
+	                    KingsGame.gameobjects.player.position.x,
+	                    KingsGame.gameobjects.player.position.y - 15,
+	                    KingsGame.gameobjects.player.position.z
+	                );
+	                KingsGame.camera.lookAt(vec);
+	                KingsGame.camera.up.set(0,0,1);
+	                break;
 	            }
 	        }
+
 	        KingsGame.dirLight.position.set(
 	            KingsGame.gameobjects.player.position.x,
 	            KingsGame.gameobjects.player.position.y - 5,
@@ -11198,7 +11184,6 @@
 	        KingsGame.pastTime = KingsGame.actualTime;
 	        KingsGame.lag += KingsGame.elapsedTime;
 	        //while (KingsGame.lag >= KingsGame.MS_PER_UPDATE) {
-	            console.log(KingsGame.lag);
 	            if(!KingsGame.paused) {
 	                KingsGame.prototype.update();
 	            }
@@ -11207,10 +11192,10 @@
 	        if(KingsGame.ready) {
 	            Backbone.trigger( 'done' );
 	        }
-	        var delta = 5 * KingsGame.clock.getDelta();
-			KingsGame.assets.lavaUniforms.time.value += 0.2 * delta;
 	        KingsGame.renderer.clear();
-	        KingsGame.composer.render( delta );
+	        //KingsGame.controls.update( KingsGame.clock.getDelta() );
+	        KingsGame.oculuscontrol.update( KingsGame.clock.getDelta() );
+	        KingsGame.effect.render( KingsGame.scene, KingsGame.camera );
 	    };
 
 	    KingsGame.prototype.lockPointer = function() {
@@ -11220,16 +11205,12 @@
 	            var pointerlockchange = function ( event ) {
 	                if ( document.pointerLockElement === element || document.mozPointerLockElement === element || document.webkitPointerLockElement === element ) {
 	                    blocker.style.display = 'none';
-	                    scoreContainer.style.display = "box";
-	                    scoreContainer.style.display = '-webkit-box';
-	                    scoreContainer.style.display = '-moz-box';
 	                    KingsGame.paused = false;
 	                } else {
 	                    blocker.style.display = '-webkit-box';
 	                    blocker.style.display = '-moz-box';
 	                    blocker.style.display = 'box';
 	                    instructions.style.display = '';
-	                    scoreContainer.style.display = "none";
 	                    KingsGame.paused = true;
 	                }
 	            };
@@ -11244,7 +11225,6 @@
 	            document.addEventListener( 'mozpointerlockerror', pointerlockerror, false );
 	            document.addEventListener( 'webkitpointerlockerror', pointerlockerror, false );
 	            instructions.addEventListener( 'click', function ( event ) {
-	                scoreContainer.style.display = "box";
 	                instructions.style.display = 'none';
 	                if( KingsGame.pointerLocked ) {
 	                    // Ask the browser to lock the pointer
@@ -11266,9 +11246,6 @@
 	                    }
 	                } else {
 	                    blocker.style.display = 'none';
-	                    scoreContainer.style.display = "box";
-	                    scoreContainer.style.display = '-webkit-box';
-	                    scoreContainer.style.display = '-moz-box';
 	                    KingsGame.paused = false;
 	                }
 	            }, false );
@@ -11282,6 +11259,8 @@
 			KingsGame.assets.lavaUniforms.resolution.value.y = window.innerHeight;
 	        KingsGame.camera.aspect = window.innerWidth / window.innerHeight;
 	        KingsGame.camera.updateProjectionMatrix();
+	        KingsGame.effect.setSize( window.innerWidth, window.innerHeight );
+	        //KingsGame.controls.handleResize();
 	        KingsGame.renderer.setSize( window.innerWidth, window.innerHeight );
 	        KingsGame.composer.reset();
 	    }
@@ -11300,27 +11279,22 @@
 
 	        case 87: // w
 	        case 38: // forward
-	            KingsGame.gameobjects.player.vehicle.setWheelForce(up ? 0 : KingsGame.gameobjects.player.maxForce, 2);
-	            KingsGame.gameobjects.player.vehicle.setWheelForce(up ? 0 : -KingsGame.gameobjects.player.maxForce, 3);
+
 	            break;
 	        case 83: // s
 	        case 40: // backward
-	            KingsGame.gameobjects.player.vehicle.setWheelForce(up ? 0 : -KingsGame.gameobjects.player.maxForce, 2);
-	            KingsGame.gameobjects.player.vehicle.setWheelForce(up ? 0 : KingsGame.gameobjects.player.maxForce, 3);
+
 	            break;
 	        case 65: // a
 	        case 37: // left
-	            KingsGame.gameobjects.player.vehicle.setSteeringValue(up ? 0 : KingsGame.gameobjects.player.maxSteerVal, 0);
-	            KingsGame.gameobjects.player.vehicle.setSteeringValue(up ? 0 : KingsGame.gameobjects.player.maxSteerVal, 1);
+
 	            break;
 	        case 68: // d
 	        case 39: // right
-	            KingsGame.gameobjects.player.vehicle.setSteeringValue(up ? 0 : -KingsGame.gameobjects.player.maxSteerVal, 0);
-	            KingsGame.gameobjects.player.vehicle.setSteeringValue(up ? 0 : -KingsGame.gameobjects.player.maxSteerVal, 1);
+
 	            break;
 	        case 66:
-	            KingsGame.gameobjects.player.vehicle.disableMotor(up ? 0 : -KingsGame.gameobjects.player.maxForce, 2);
-	            KingsGame.gameobjects.player.vehicle.disableMotor(up ? 0 : KingsGame.gameobjects.player.maxForce, 3);
+
 	            break;
 	        }
 	    };
@@ -11344,14 +11318,12 @@
 
 	        case 39: // right
 	        case 68: // d
-	            KingsGame.gameobjects.player.state = KingsGame.gameobjects.player.STATES.turningRight;
-	            //KingsGame.gameobjects.player.body.angularVelocity.set(0,0,1);
+	            //KingsGame.gameobjects.player.state = KingsGame.gameobjects.player.STATES.turningRight;
 	            break;
 
 	        case 37: // left
 	        case 65: // a
-	            KingsGame.gameobjects.player.state = KingsGame.gameobjects.player.STATES.turningLeft;
-	            //KingsGame.gameobjects.player.body.angularVelocity.set(0,0,-1);
+	            //KingsGame.gameobjects.player.state = KingsGame.gameobjects.player.STATES.turningLeft;
 	            break;
 	        }
 	    };
@@ -11369,17 +11341,6 @@
 	        }
 	    };
 
-	    KingsGame.prototype.bindSoundToMesh = function(mesh, soundPath) {
-	        var audioLoader = new THREE.AudioLoader();
-	        var sound = new THREE.PositionalAudio( KingsGame.listener );
-			audioLoader.load( soundPath, function( buffer ) {
-				sound2.setBuffer( buffer );
-				sound2.setRefDistance( 20 );
-				sound2.play();
-			});
-			mesh.add( sound );
-	    };
-
 	    KingsGame.prototype.initLoadManager = function() {
 	        KingsGame.manager = new THREE.LoadingManager();
 	        KingsGame.manager.onProgress = function(item, loaded, total) {
@@ -11388,33 +11349,18 @@
 	            Backbone.trigger('loading', percentComplete);
 	        };
 	        KingsGame.manager.onLoad = function() {
-
+	            KingsGame.ready = true;
 	        };
 	        KingsGame.manager.onError = function() {
-
+	            alert("There was an error loading");
 	        };
 	    }
 
 	    KingsGame.prototype.initGround = function() {
 	        THREE.crossOrigin = "";
 	        KingsGame.groundMaterial = new CANNON.Material("groundMaterial");
-	        var wheelMaterial = new CANNON.Material("wheelMaterial");
-	        var wheelGroundContactMaterial = window.wheelGroundContactMaterial = new CANNON.ContactMaterial(wheelMaterial, KingsGame.groundMaterial, {
-	            friction: 0.3,
-	            restitution: 0,
-	            contactEquationStiffness: 1000
-	        });
-	        KingsGame.world.addContactMaterial(wheelGroundContactMaterial);
 
-	        KingsGame.road = new KingsGame.Road();
-
-	        if(KingsGame.fireBall != null) {
-	            KingsGame.scene.remove( KingsGame.fireBall );
-	        }
-	        var ballGeometry = new THREE.SphereGeometry( 60, 64, 64 );
-	    	KingsGame.fireBall = new THREE.Mesh( ballGeometry, KingsGame.assets.lavaMaterial );
-	    	KingsGame.fireBall.position.set(0, 165, 0);
-	    	KingsGame.scene.add( KingsGame.fireBall );
+	        //KingsGame.road = new KingsGame.Road();
 
 	        var groundBody = new CANNON.Body({
 	            mass: 0,
@@ -11422,44 +11368,19 @@
 	        });
 	        var groundShape = new CANNON.Plane();
 	        groundBody.addShape(groundShape);
-	        var callback = function(e) {
-	            if(e.body.name == "player" || e.body.name == "wheel") {
-	                if(!KingsGame.gameOver) {
-	                    Backbone.trigger("gameOver");
-	                    KingsGame.gameOver = true;
-	                }
-	            }
-	        };
-	        groundBody.addEventListener("collide", callback);
 	        KingsGame.world.addBody(groundBody);
-	    };
-
-	    KingsGame.prototype.bumper = function(e){
-	        if(e.body.name == "player" || e.body.name == "wheel") {
-	            var dir = KingsGame.gameobjects.player.body.velocity.clone();
-	            dir.normalize();
-	            dir = dir.negate();
-	            dir.z = 0.3;
-	            dir = dir.scale(60);
-	            KingsGame.gameobjects.player.body.angularVelocity.set(0,0,0);
-	            KingsGame.gameobjects.player.body.inertia.set(0,0,0);
-	            KingsGame.gameobjects.player.body.velocity.copy(dir);
-	        }
 	    };
 
 	    KingsGame.prototype.initGameObjects = function() {
 	        KingsGame.gameobjects = {
 	            "player" : new KingsGame.Player({
-	                modelPath: './assets/models/car/',
-	                fileName: 'car',
-	                useMTL: true,
+	                //modelPath: './assets/models/car/',
+	                //fileName: 'car',
+	                //useMTL: true,
 	                position: new THREE.Vector3(0,0,0),
 	                rotation: new THREE.Vector3(90,180,0),
 	                scale: new THREE.Vector3(1,1,1),
-	                weight: 4,
-	                colideEvent: function() {
-	                    KingsGame.ready = true;
-	                }
+	                weight: 0
 	            }),
 	            "crate" : new KingsGame.GameObject({
 	                modelPath: './assets/models/crate/',
@@ -11470,9 +11391,9 @@
 	                weight: 4,
 	                bounciness: 0.9,
 	                //soundPath: './assets/sounds/running_hell.mp3',
-	                colideEvent: KingsGame.prototype.bumper
 	            }),
 	        };
+	        KingsGame.gameobjects.player.pastAccel = [0,0,0];
 	    };
 
 	    KingsGame.prototype.alreadyLoaded = function(name) {
@@ -11501,34 +11422,6 @@
 	            bumpScale  :  0.45,
 	        });
 
-	        var smap = new THREE.TextureLoader(KingsGame.manager).load( "./assets/textures/Supergram1.png" );
-	        KingsGame.assets.acceleratorTexture = new THREE.MeshPhongMaterial({
-	            shininess  :  0.1,
-	            alphaMap   :  smap,
-	            map        :  smap,
-	        });
-
-	        var textureLoader = new THREE.TextureLoader(KingsGame.manager);
-			KingsGame.assets.lavaUniforms = {
-				fogDensity: { value: 0.01 },
-				fogColor:   { value: new THREE.Vector3( 0, 0, 0 ) },
-				time:       { value: 1.0 },
-				resolution: { value: new THREE.Vector2() },
-				uvScale:    { value: new THREE.Vector2( 3.0, 1.0 ) },
-				texture1:   { value: textureLoader.load( './assets/textures/cloud.png' ) },
-				texture2:   { value: textureLoader.load( './assets/textures/lava.jpg' ) }
-			};
-
-			KingsGame.assets.lavaUniforms.texture1.value.wrapS = KingsGame.assets.lavaUniforms.texture1.value.wrapT = THREE.RepeatWrapping;
-			KingsGame.assets.lavaUniforms.texture2.value.wrapS = KingsGame.assets.lavaUniforms.texture2.value.wrapT = THREE.RepeatWrapping;
-
-	    	KingsGame.assets.lavaMaterial = new THREE.ShaderMaterial({
-	    	    uniforms: KingsGame.assets.lavaUniforms,
-	    		vertexShader:   document.getElementById( 'vertexShaderLava'   ).textContent,
-	    		fragmentShader: document.getElementById( 'fragmentShaderLava' ).textContent,
-	            side: THREE.DoubleSide
-	    	});
-
 	        KingsGame.assets.particleTexture = new THREE.TextureLoader(KingsGame.manager).load("./assets/textures/particle.png");
 	    };
 
@@ -11540,7 +11433,7 @@
 	        KingsGame.score = 0;
 	        KingsGame.paused = false;
 
-	        KingsGame.road.destroy();
+	        //KingsGame.road.destroy();
 	        KingsGame.prototype.initGround();
 	        KingsGame.gameobjects.player.reset();
 
@@ -11550,8 +11443,51 @@
 	        }
 	    };
 
+	    KingsGame.prototype.sendMessage = function(message) {
+	        chrome.runtime.sendMessage(KingsGame.serialExtensionId, {
+	                data: message
+	            },
+	            function (response) {
+	                console.log(response);
+	            }
+	        );
+	    };
+
 	    $.fn.initGame = function( parameters ) {
 	        if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+	        KingsGame.serialExtensionId = "mgfmopegkdlopmkaodehjmdmpbjphlnc";
+	        KingsGame.port = chrome.runtime.connect(KingsGame.serialExtensionId);
+	        KingsGame.port.onMessage.addListener(function(msg) {
+	            if(KingsGame.ready){
+	                var gyro = msg.substring(msg.indexOf("#GYR:")+5,msg.indexOf("#FIL:"));
+	                gyro = gyro.split(",");
+	                //KingsGame.gameobjects.player.rotation.x = gyro[2];
+	                //KingsGame.gameobjects.player.rotation.y = gyro[1];
+	                //KingsGame.gameobjects.player.rotation.z = gyro[0];
+	                var accel = msg.substring(msg.indexOf("#FIL:")+5,msg.length-1);
+	                accel = accel.split(",");
+	                console.log(accel);
+	                var filterThreshold = 1;
+	                var filter = function(valor) {
+	                    KingsGame.gameobjects.player.pastAccel = accel;
+	                    if (valor[0] > KingsGame.gameobjects.player.pastAccel[0] + filterThreshold || valor[0] < KingsGame.gameobjects.player.pastAccel[0] - filterThreshold) {
+	                        KingsGame.gameobjects.player.position.z += valor[0] - KingsGame.gameobjects.player.pastAccel[0];
+	                        KingsGame.gameobjects.player.pastAccel[0] = valor[0];
+	                    }
+	                    if (valor[1] > KingsGame.gameobjects.player.pastAccel[1] + filterThreshold || valor[1] < KingsGame.gameobjects.player.pastAccel[1] - filterThreshold) {
+	                        KingsGame.gameobjects.player.position.y += valor[1] - KingsGame.gameobjects.player.pastAccel[1];
+	                        KingsGame.gameobjects.player.pastAccel[1] = valor[1];
+	                    }
+	                    if (valor[2] > KingsGame.gameobjects.player.pastAccel[2] + filterThreshold || valor[2] < KingsGame.gameobjects.player.pastAccel[2] - filterThreshold) {
+	                        KingsGame.gameobjects.player.position.x += valor[2] - KingsGame.gameobjects.player.pastAccel[2];
+	                        KingsGame.gameobjects.player.pastAccel[2] = valor[2];
+	                    }
+	                };
+
+	                filter(accel);
+	            }
+	        });
 
 	        KingsGame.loadingScreen = new LoadingScreen();
 	        KingsGame.loadingScreen.render();
@@ -11565,12 +11501,12 @@
 	        });
 	        $(document.body).append( KingsGame.gameOverScreen.$el );
 
-	        KingsGame.HAZARDS = {
-	            "plain": 0,
-	            "bumpers": 1,
-	            "accelerator": 2,
-	            "pit": 3,
-	            "meteorites": 4,
+	        KingsGame.OBJECTIVES = {
+	            "ground_figure": 0,
+	            "hanging_figure": 1,
+	            "water_melon": 2,
+	            "target": 3,
+	            "man_target": 4,
 	        };
 
 	        KingsGame.DIFICULTY = {
@@ -11678,7 +11614,7 @@
 			audioLoader.load( './assets/sounds/Main Entrance.mp3', function( buffer ) {
 				sound.setBuffer( buffer );
 				sound.setLoop(true);
-				sound.setVolume(0.3);
+				sound.setVolume(0.0);
 				sound.play();
 			});
 
@@ -11691,14 +11627,10 @@
 	        KingsGame.renderer.autoClear = false;
 	        $(this).append( KingsGame.renderer.domElement );
 
-	        var renderModel = new THREE.RenderPass( KingsGame.scene, KingsGame.camera );
-			var effectBloom = new THREE.BloomPass( 0 );
-			var effectFilm = new THREE.FilmPass( 0, 0, 1024, false );
-			effectFilm.renderToScreen = true;
-			KingsGame.composer = new THREE.EffectComposer( KingsGame.renderer );
-			KingsGame.composer.addPass( renderModel );
-			KingsGame.composer.addPass( effectBloom );
-			KingsGame.composer.addPass( effectFilm );
+	        KingsGame.effect = new THREE.OculusRiftEffect( KingsGame.renderer, { worldScale: 1 } );
+	        KingsGame.effect.setSize( window.innerWidth, window.innerHeight );
+
+	        KingsGame.oculuscontrol = new THREE.OculusControls( KingsGame.camera );
 
 	        KingsGame.stats = new Stats();
 			$(this).append( KingsGame.stats.dom );
@@ -11707,6 +11639,8 @@
 	        document.addEventListener( 'keydown', KingsGame.prototype.onKeyDown, false );
 	        document.addEventListener( 'keyup', KingsGame.prototype.onKeyUp, false );
 	        document.addEventListener( 'mousemove', KingsGame.prototype.onMouseMove, false );
+
+	        KingsGame.oculuscontrol.connect();
 
 	        KingsGame.prototype.render();
 	    };
@@ -71038,6 +70972,579 @@
 /***/ function(module, exports) {
 
 	/**
+	 * @author troffmo5 / http://github.com/troffmo5
+	 *
+	 * Effect to render the scene in stereo 3d side by side with lens distortion.
+	 * It is written to be used with the Oculus Rift (http://www.oculusvr.com/) but
+	 * it works also with other HMD using the same technology
+	 */
+
+	THREE.OculusRiftEffect = function ( renderer, options ) {
+		// worldFactor indicates how many units is 1 meter
+		var worldFactor = (options && options.worldFactor) ? options.worldFactor: 1.0;
+
+		// Specific HMD parameters
+		var HMD = (options && options.HMD) ? options.HMD: {
+			// Parameters from the Oculus Rift DK1
+			hResolution: 1280,
+			vResolution: 800,
+			hScreenSize: 0.14976,
+			vScreenSize: 0.0936,
+			interpupillaryDistance: 0.064,
+			lensSeparationDistance: 0.064,
+			eyeToScreenDistance: 0.041,
+			distortionK : [1.0, 0.22, 0.24, 0.0],
+			chromaAbParameter: [ 0.996, -0.004, 1.014, 0.0]
+		};
+
+		// Perspective camera
+		var pCamera = new THREE.PerspectiveCamera();
+		pCamera.matrixAutoUpdate = false;
+		pCamera.target = new THREE.Vector3();
+
+		// Orthographic camera
+		var oCamera = new THREE.OrthographicCamera( -1, 1, 1, -1, 1, 1000 );
+		oCamera.position.z = 1;
+
+		// pre-render hooks
+		this.preLeftRender = function() {};
+		this.preRightRender = function() {};
+
+		renderer.autoClear = false;
+		var emptyColor = new THREE.Color("black");
+
+		// Render target
+		var RTParams = { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat };
+		var renderTarget = new THREE.WebGLRenderTarget( 640, 800, RTParams );
+		var RTMaterial = new THREE.ShaderMaterial( {
+			uniforms: {
+				"texid": { type: "t", value: renderTarget },
+				"scale": { type: "v2", value: new THREE.Vector2(1.0,1.0) },
+				"scaleIn": { type: "v2", value: new THREE.Vector2(1.0,1.0) },
+				"lensCenter": { type: "v2", value: new THREE.Vector2(0.0,0.0) },
+				"hmdWarpParam": { type: "v4", value: new THREE.Vector4(1.0,0.0,0.0,0.0) },
+				"chromAbParam": { type: "v4", value: new THREE.Vector4(1.0,0.0,0.0,0.0) }
+			},
+			vertexShader: [
+				"varying vec2 vUv;",
+				"void main() {",
+				" vUv = uv;",
+				"	gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+				"}"
+			].join("\n"),
+
+			fragmentShader: [
+				"uniform vec2 scale;",
+				"uniform vec2 scaleIn;",
+				"uniform vec2 lensCenter;",
+				"uniform vec4 hmdWarpParam;",
+				'uniform vec4 chromAbParam;',
+				"uniform sampler2D texid;",
+				"varying vec2 vUv;",
+				"void main()",
+				"{",
+				"  vec2 uv = (vUv*2.0)-1.0;", // range from [0,1] to [-1,1]
+				"  vec2 theta = (uv-lensCenter)*scaleIn;",
+				"  float rSq = theta.x*theta.x + theta.y*theta.y;",
+				"  vec2 rvector = theta*(hmdWarpParam.x + hmdWarpParam.y*rSq + hmdWarpParam.z*rSq*rSq + hmdWarpParam.w*rSq*rSq*rSq);",
+				'  vec2 rBlue = rvector * (chromAbParam.z + chromAbParam.w * rSq);',
+				"  vec2 tcBlue = (lensCenter + scale * rBlue);",
+				"  tcBlue = (tcBlue+1.0)/2.0;", // range from [-1,1] to [0,1]
+				"  if (any(bvec2(clamp(tcBlue, vec2(0.0,0.0), vec2(1.0,1.0))-tcBlue))) {",
+				"    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);",
+				"    return;}",
+				"  vec2 tcGreen = lensCenter + scale * rvector;",
+				"  tcGreen = (tcGreen+1.0)/2.0;", // range from [-1,1] to [0,1]
+				"  vec2 rRed = rvector * (chromAbParam.x + chromAbParam.y * rSq);",
+				"  vec2 tcRed = lensCenter + scale * rRed;",
+				"  tcRed = (tcRed+1.0)/2.0;", // range from [-1,1] to [0,1]
+				"  gl_FragColor = vec4(texture2D(texid, tcRed).r, texture2D(texid, tcGreen).g, texture2D(texid, tcBlue).b, 1);",
+				"}"
+			].join("\n")
+		} );
+
+		var mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2, 2 ), RTMaterial );
+
+		// Final scene
+		var finalScene = new THREE.Scene();
+		finalScene.add( oCamera );
+		finalScene.add( mesh );
+
+	    var left = {}, right = {};
+	    var distScale = 1.0;
+		this.setHMD = function(v) {
+			HMD = v;
+			// Compute aspect ratio and FOV
+			var aspect = HMD.hResolution / (2*HMD.vResolution);
+
+			// Fov is normally computed with:
+			//   THREE.Math.radToDeg( 2*Math.atan2(HMD.vScreenSize,2*HMD.eyeToScreenDistance) );
+			// But with lens distortion it is increased (see Oculus SDK Documentation)
+			var r = -1.0 - (4 * (HMD.hScreenSize/4 - HMD.lensSeparationDistance/2) / HMD.hScreenSize);
+			distScale = (HMD.distortionK[0] + HMD.distortionK[1] * Math.pow(r,2) + HMD.distortionK[2] * Math.pow(r,4) + HMD.distortionK[3] * Math.pow(r,6));
+			var fov = THREE.Math.radToDeg(2*Math.atan2(HMD.vScreenSize*distScale, 2*HMD.eyeToScreenDistance));
+
+			// Compute camera projection matrices
+			var proj = (new THREE.Matrix4()).makePerspective( fov, aspect, 0.3, 10000 );
+			var h = 4 * (HMD.hScreenSize/4 - HMD.interpupillaryDistance/2) / HMD.hScreenSize;
+			left.proj = ((new THREE.Matrix4()).makeTranslation( h, 0.0, 0.0 )).multiply(proj);
+			right.proj = ((new THREE.Matrix4()).makeTranslation( -h, 0.0, 0.0 )).multiply(proj);
+
+			// Compute camera transformation matrices
+			left.tranform = (new THREE.Matrix4()).makeTranslation( -worldFactor * HMD.interpupillaryDistance/2, 0.0, 0.0 );
+			right.tranform = (new THREE.Matrix4()).makeTranslation( worldFactor * HMD.interpupillaryDistance/2, 0.0, 0.0 );
+
+			// Compute Viewport
+			left.viewport = [0, 0, HMD.hResolution/2, HMD.vResolution];
+			right.viewport = [HMD.hResolution/2, 0, HMD.hResolution/2, HMD.vResolution];
+
+			// Distortion shader parameters
+			var lensShift = 4 * (HMD.hScreenSize/4 - HMD.lensSeparationDistance/2) / HMD.hScreenSize;
+			left.lensCenter = new THREE.Vector2(lensShift, 0.0);
+			right.lensCenter = new THREE.Vector2(-lensShift, 0.0);
+
+			RTMaterial.uniforms['hmdWarpParam'].value = new THREE.Vector4(HMD.distortionK[0], HMD.distortionK[1], HMD.distortionK[2], HMD.distortionK[3]);
+			RTMaterial.uniforms['chromAbParam'].value = new THREE.Vector4(HMD.chromaAbParameter[0], HMD.chromaAbParameter[1], HMD.chromaAbParameter[2], HMD.chromaAbParameter[3]);
+			RTMaterial.uniforms['scaleIn'].value = new THREE.Vector2(1.0,1.0/aspect);
+			RTMaterial.uniforms['scale'].value = new THREE.Vector2(1.0/distScale, 1.0*aspect/distScale);
+
+			// Create render target
+			if ( renderTarget ) renderTarget.dispose();
+			renderTarget = new THREE.WebGLRenderTarget( HMD.hResolution*distScale/2, HMD.vResolution*distScale, RTParams );
+			RTMaterial.uniforms[ "texid" ].value = renderTarget;
+
+		}	
+		this.getHMD = function() {return HMD};
+
+		this.setHMD(HMD);	
+
+		this.setSize = function ( width, height ) {
+			left.viewport = [width/2 - HMD.hResolution/2, height/2 - HMD.vResolution/2, HMD.hResolution/2, HMD.vResolution];
+			right.viewport = [width/2, height/2 - HMD.vResolution/2, HMD.hResolution/2, HMD.vResolution];
+
+			renderer.setSize( width, height );
+		};
+
+		this.render = function ( scene, camera ) {
+			var cc = renderer.getClearColor().clone();
+
+			// Clear
+			renderer.setClearColor(emptyColor);
+			renderer.clear();
+			renderer.setClearColor(cc);
+
+			// camera parameters
+			if (camera.matrixAutoUpdate) camera.updateMatrix();
+
+			// Render left
+			this.preLeftRender();
+
+			pCamera.projectionMatrix.copy(left.proj);
+
+			pCamera.matrix.copy(camera.matrix).multiply(left.tranform);
+			pCamera.matrixWorldNeedsUpdate = true;
+
+			renderer.setViewport(left.viewport[0], left.viewport[1], left.viewport[2], left.viewport[3]);
+
+			RTMaterial.uniforms['lensCenter'].value = left.lensCenter;
+			renderer.render( scene, pCamera, renderTarget, true );
+
+			renderer.render( finalScene, oCamera );
+
+			// Render right
+			this.preRightRender();
+
+			pCamera.projectionMatrix.copy(right.proj);
+
+			pCamera.matrix.copy(camera.matrix).multiply(right.tranform);
+			pCamera.matrixWorldNeedsUpdate = true;
+
+			renderer.setViewport(right.viewport[0], right.viewport[1], right.viewport[2], right.viewport[3]);
+
+			RTMaterial.uniforms['lensCenter'].value = right.lensCenter;
+
+			renderer.render( scene, pCamera, renderTarget, true );
+			renderer.render( finalScene, oCamera );
+
+		};
+
+		this.dispose = function() {
+			if ( RTMaterial ) {
+				RTMaterial.dispose();
+			}
+			if ( renderTarget ) {
+				renderTarget.dispose();
+			}
+		};
+
+	};
+
+
+/***/ },
+/* 11 */
+/***/ function(module, exports) {
+
+	/**
+	 * @author mrdoob / http://mrdoob.com/
+	 * @author alteredq / http://alteredqualia.com/
+	 * @author paulirish / http://paulirish.com/
+	 */
+
+	THREE.FirstPersonControls = function ( object, domElement ) {
+
+		this.object = object;
+		this.target = new THREE.Vector3( 0, 0, 0 );
+
+		this.domElement = ( domElement !== undefined ) ? domElement : document;
+
+		this.movementSpeed = 1.0;
+		this.lookSpeed = 0.005;
+
+		this.lookVertical = true;
+		this.autoForward = false;
+		// this.invertVertical = false;
+
+		this.activeLook = true;
+
+		this.heightSpeed = false;
+		this.heightCoef = 1.0;
+		this.heightMin = 0.0;
+		this.heightMax = 1.0;
+
+		this.constrainVertical = false;
+		this.verticalMin = 0;
+		this.verticalMax = Math.PI;
+
+		this.autoSpeedFactor = 0.0;
+
+		this.mouseX = 0;
+		this.mouseY = 0;
+
+		this.lat = 0;
+		this.lon = 0;
+		this.phi = 0;
+		this.theta = 0;
+
+		this.moveForward = false;
+		this.moveBackward = false;
+		this.moveLeft = false;
+		this.moveRight = false;
+		this.freeze = false;
+
+		this.mouseDragOn = false;
+
+		this.viewHalfX = 0;
+		this.viewHalfY = 0;
+
+		if ( this.domElement !== document ) {
+
+			this.domElement.setAttribute( 'tabindex', -1 );
+
+		}
+
+		//
+
+		this.handleResize = function () {
+
+			if ( this.domElement === document ) {
+
+				this.viewHalfX = window.innerWidth / 2;
+				this.viewHalfY = window.innerHeight / 2;
+
+			} else {
+
+				this.viewHalfX = this.domElement.offsetWidth / 2;
+				this.viewHalfY = this.domElement.offsetHeight / 2;
+
+			}
+
+		};
+
+		this.onMouseDown = function ( event ) {
+
+			if ( this.domElement !== document ) {
+
+				this.domElement.focus();
+
+			}
+
+			event.preventDefault();
+			event.stopPropagation();
+
+			if ( this.activeLook ) {
+
+				switch ( event.button ) {
+
+					case 0: this.moveForward = true; break;
+					case 2: this.moveBackward = true; break;
+
+				}
+
+			}
+
+			this.mouseDragOn = true;
+
+		};
+
+		this.onMouseUp = function ( event ) {
+
+			event.preventDefault();
+			event.stopPropagation();
+
+			if ( this.activeLook ) {
+
+				switch ( event.button ) {
+
+					case 0: this.moveForward = false; break;
+					case 2: this.moveBackward = false; break;
+
+				}
+
+			}
+
+			this.mouseDragOn = false;
+
+		};
+
+		this.onMouseMove = function ( event ) {
+
+			if ( this.domElement === document ) {
+
+				this.mouseX = event.pageX - this.viewHalfX;
+				this.mouseY = event.pageY - this.viewHalfY;
+
+			} else {
+
+				this.mouseX = event.pageX - this.domElement.offsetLeft - this.viewHalfX;
+				this.mouseY = event.pageY - this.domElement.offsetTop - this.viewHalfY;
+
+			}
+
+		};
+
+		this.onKeyDown = function ( event ) {
+
+			//event.preventDefault();
+
+			switch ( event.keyCode ) {
+
+				case 38: /*up*/
+				case 87: /*W*/ this.moveForward = true; break;
+
+				case 37: /*left*/
+				case 65: /*A*/ this.moveLeft = true; break;
+
+				case 40: /*down*/
+				case 83: /*S*/ this.moveBackward = true; break;
+
+				case 39: /*right*/
+				case 68: /*D*/ this.moveRight = true; break;
+
+				case 82: /*R*/ this.moveUp = true; break;
+				case 70: /*F*/ this.moveDown = true; break;
+
+				case 81: /*Q*/ this.freeze = !this.freeze; break;
+
+			}
+
+		};
+
+		this.onKeyUp = function ( event ) {
+
+			switch( event.keyCode ) {
+
+				case 38: /*up*/
+				case 87: /*W*/ this.moveForward = false; break;
+
+				case 37: /*left*/
+				case 65: /*A*/ this.moveLeft = false; break;
+
+				case 40: /*down*/
+				case 83: /*S*/ this.moveBackward = false; break;
+
+				case 39: /*right*/
+				case 68: /*D*/ this.moveRight = false; break;
+
+				case 82: /*R*/ this.moveUp = false; break;
+				case 70: /*F*/ this.moveDown = false; break;
+
+			}
+
+		};
+
+		this.update = function( delta ) {
+
+			if ( this.freeze ) {
+
+				return;
+
+			}
+
+			if ( this.heightSpeed ) {
+
+				var y = THREE.Math.clamp( this.object.position.y, this.heightMin, this.heightMax );
+				var heightDelta = y - this.heightMin;
+
+				this.autoSpeedFactor = delta * ( heightDelta * this.heightCoef );
+
+			} else {
+
+				this.autoSpeedFactor = 0.0;
+
+			}
+
+			var actualMoveSpeed = delta * this.movementSpeed;
+
+			if ( this.moveForward || ( this.autoForward && !this.moveBackward ) ) this.object.translateZ( - ( actualMoveSpeed + this.autoSpeedFactor ) );
+			if ( this.moveBackward ) this.object.translateZ( actualMoveSpeed );
+
+			if ( this.moveLeft ) this.object.translateX( - actualMoveSpeed );
+			if ( this.moveRight ) this.object.translateX( actualMoveSpeed );
+
+			if ( this.moveUp ) this.object.translateY( actualMoveSpeed );
+			if ( this.moveDown ) this.object.translateY( - actualMoveSpeed );
+
+			var actualLookSpeed = delta * this.lookSpeed;
+
+			if ( !this.activeLook ) {
+
+				actualLookSpeed = 0;
+
+			}
+
+			var verticalLookRatio = 1;
+
+			if ( this.constrainVertical ) {
+
+				verticalLookRatio = Math.PI / ( this.verticalMax - this.verticalMin );
+
+			}
+
+			this.lon += this.mouseX * actualLookSpeed;
+			if( this.lookVertical ) this.lat -= this.mouseY * actualLookSpeed * verticalLookRatio;
+
+			this.lat = Math.max( - 85, Math.min( 85, this.lat ) );
+			this.phi = THREE.Math.degToRad( 90 - this.lat );
+
+			this.theta = THREE.Math.degToRad( this.lon );
+
+			if ( this.constrainVertical ) {
+
+				this.phi = THREE.Math.mapLinear( this.phi, 0, Math.PI, this.verticalMin, this.verticalMax );
+
+			}
+
+			var targetPosition = this.target,
+				position = this.object.position;
+
+			targetPosition.x = position.x + 100 * Math.sin( this.phi ) * Math.cos( this.theta );
+			targetPosition.y = position.y + 100 * Math.cos( this.phi );
+			targetPosition.z = position.z + 100 * Math.sin( this.phi ) * Math.sin( this.theta );
+
+			this.object.lookAt( targetPosition );
+
+		};
+
+
+		this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
+
+		this.domElement.addEventListener( 'mousemove', bind( this, this.onMouseMove ), false );
+		this.domElement.addEventListener( 'mousedown', bind( this, this.onMouseDown ), false );
+		this.domElement.addEventListener( 'mouseup', bind( this, this.onMouseUp ), false );
+		
+		window.addEventListener( 'keydown', bind( this, this.onKeyDown ), false );
+		window.addEventListener( 'keyup', bind( this, this.onKeyUp ), false );
+
+		function bind( scope, fn ) {
+
+			return function () {
+
+				fn.apply( scope, arguments );
+
+			};
+
+		};
+
+		this.handleResize();
+
+	};
+
+
+/***/ },
+/* 12 */
+/***/ function(module, exports) {
+
+	/**
+	 * @author possan / http://possan.se/
+	 *
+	 * Oculus headtracking control
+	 * - use together with the oculus-rest project to get headtracking
+	 *   coordinates from the rift: http://github.com/possan/oculus-rest
+	 */
+
+	THREE.OculusControls = function ( object ) {
+
+		this.object = object;
+		this.target = new THREE.Vector3( 0, 0, 0 );
+
+		this.headquat = new THREE.Quaternion();
+		this.freeze = false;
+
+		this.loadAjaxJSON = function ( url, callback ) {
+			var xhr = new XMLHttpRequest();
+			xhr.onreadystatechange = function () {
+				if ( xhr.readyState === xhr.DONE ) {
+					if ( xhr.status === 200 || xhr.status === 0 ) {
+						if ( xhr.responseText ) {
+							var json = JSON.parse( xhr.responseText );
+							callback( json );
+						}
+					}
+				}
+			};
+			xhr.open( "GET", url, true );
+			xhr.withCredentials = false;
+			xhr.send( null );
+		};
+
+		this.gotCoordinates = function( r ) {
+			this.headquat.set(r.quat.x, r.quat.y, r.quat.z, r.quat.w);
+			this.queuePoll();
+		}
+
+		this.pollOnce = function() {
+			this.loadAjaxJSON('http://localhost:50000', bind(this, this.gotCoordinates));
+		}
+
+		this.queuePoll = function() {
+			setTimeout(bind(this, this.pollOnce), 10);
+		}
+
+		this.update = function( delta ) {
+			if ( this.freeze ) {
+				return;
+			}
+
+			this.object.quaternion.multiply(this.headquat);
+		};
+
+		function bind( scope, fn ) {
+			return function () {
+				fn.apply( scope, arguments );
+			};
+		};
+
+		this.connect = function() {
+			this.queuePoll();
+		};
+	};
+
+
+/***/ },
+/* 13 */
+/***/ function(module, exports) {
+
+	/**
 	 * @author alteredq / http://alteredqualia.com/
 	 */
 
@@ -71215,7 +71722,7 @@
 
 
 /***/ },
-/* 11 */
+/* 14 */
 /***/ function(module, exports) {
 
 	/**
@@ -71287,7 +71794,7 @@
 
 
 /***/ },
-/* 12 */
+/* 15 */
 /***/ function(module, exports) {
 
 	/**
@@ -71390,7 +71897,7 @@
 
 
 /***/ },
-/* 13 */
+/* 16 */
 /***/ function(module, exports) {
 
 	/**
@@ -71449,7 +71956,7 @@
 
 
 /***/ },
-/* 14 */
+/* 17 */
 /***/ function(module, exports) {
 
 	/**
@@ -71571,7 +72078,7 @@
 
 
 /***/ },
-/* 15 */
+/* 18 */
 /***/ function(module, exports) {
 
 	/**
@@ -71637,7 +72144,7 @@
 
 
 /***/ },
-/* 16 */
+/* 19 */
 /***/ function(module, exports) {
 
 	/**
@@ -72361,7 +72868,7 @@
 
 
 /***/ },
-/* 17 */
+/* 20 */
 /***/ function(module, exports) {
 
 	/**
@@ -72843,7 +73350,7 @@
 
 
 /***/ },
-/* 18 */
+/* 21 */
 /***/ function(module, exports) {
 
 	/**
@@ -73150,7 +73657,7 @@
 
 
 /***/ },
-/* 19 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -73234,7 +73741,7 @@
 
 
 /***/ },
-/* 20 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1),__webpack_require__(3)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, Backbone) {
@@ -73276,10 +73783,10 @@
 
 
 /***/ },
-/* 21 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1),__webpack_require__(3),__webpack_require__(22)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, Backbone, LeaderBoard) {
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1),__webpack_require__(3),__webpack_require__(25)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, Backbone, LeaderBoard) {
 	    var gameOverScreen = Backbone.View.extend({
 	        tagname: "div",
 	        className: "gameOverScreen",
@@ -73420,10 +73927,10 @@
 
 
 /***/ },
-/* 22 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1),__webpack_require__(3),__webpack_require__(23)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, Backbone, LeaderBoardRow) {
+	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1),__webpack_require__(3),__webpack_require__(26)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, Backbone, LeaderBoardRow) {
 	    var leaderBoard = Backbone.View.extend({
 	        tagname: "div",
 	        className: "leaderBoard",
@@ -73447,7 +73954,7 @@
 
 
 /***/ },
-/* 23 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1),__webpack_require__(3)], __WEBPACK_AMD_DEFINE_RESULT__ = function($, Backbone) {
@@ -73486,7 +73993,7 @@
 
 
 /***/ },
-/* 24 */
+/* 27 */
 /***/ function(module, exports) {
 
 	// stats.js - http://github.com/mrdoob/stats.js

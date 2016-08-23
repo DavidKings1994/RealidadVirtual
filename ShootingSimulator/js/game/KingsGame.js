@@ -17,6 +17,10 @@
 	require('./../../node_modules/three/examples/js/shaders/CopyShader.js');
 	require('./../../node_modules/three/examples/js/shaders/FilmShader.js');
 
+    require("./../effects/OculusRiftEffect.js");
+    require("./../controls/FirstPersonControls.js");
+    require("./../controls/OculusControls.js");
+
 	require('./../../node_modules/three/examples/js/postprocessing/EffectComposer.js');
 	require('./../../node_modules/three/examples/js/postprocessing/ShaderPass.js');
 	require('./../../node_modules/three/examples/js/postprocessing/MaskPass.js');
@@ -1006,80 +1010,60 @@
     KingsGame.prototype.update = function () {
         KingsGame.prototype.updatePhysics();
         var elements = _.toArray(KingsGame.gameobjects);
-        for (var i = 0; i < elements.length; i++) {
-            elements[i].update();
+        if(KingsGame.ready) {
+            for (var i = 0; i < elements.length; i++) {
+                elements[i].update();
+            }
         }
-        if( KingsGame.road.insideRoad(KingsGame.gameobjects.player.position) ) {
-            KingsGame.fireBall.position.y = Math.min(KingsGame.gameobjects.player.position.y+100,KingsGame.fireBall.position.y);
-            KingsGame.score = Math.max(Math.floor((KingsGame.gameobjects.player.position.y * -1) / 10), KingsGame.score);
-            puntuacion.innerHTML = KingsGame.score;
-            KingsGame.road.update();
-            KingsGame.sky.position.set(
-                KingsGame.gameobjects.player.position.x,
-                KingsGame.gameobjects.player.position.y,
-                0
-            );
-            switch (KingsGame.camera.type) {
-                case KingsGame.CAMERA_TYPES.firstPerson: {
-                    var fixedVec = new THREE.Vector3(0,-1.5,1.5);
-                    fixedVec.applyQuaternion(KingsGame.gameobjects.player.body.quaternion);
-                    fixedVec.add(KingsGame.gameobjects.player.position);
-                    KingsGame.camera.position.set( fixedVec.x, fixedVec.y, fixedVec.z );
-                    fixedVec.add(KingsGame.gameobjects.player.getDirection());
-                    KingsGame.camera.lookAt(fixedVec);
-                    var up = new THREE.Vector3(0,1,0);
-                    up.applyQuaternion(KingsGame.gameobjects.player.model.quaternion);
-                    KingsGame.camera.up.copy(up);
-                    break;
-                }
-                case KingsGame.CAMERA_TYPES.thirdPerson: {
-                    var fixedVec = new THREE.Vector3(0,0,3);
-                    fixedVec.applyQuaternion(KingsGame.gameobjects.player.body.quaternion);
-                    fixedVec.add(KingsGame.gameobjects.player.position);
-                    fixedVec.add(KingsGame.gameobjects.player.getDirection().negate());
-                    KingsGame.camera.position.set( fixedVec.x, fixedVec.y, fixedVec.z );
-                    KingsGame.camera.lookAt(KingsGame.gameobjects.player.position);
-                    KingsGame.camera.up.set(0,0,1);
-                    break;
-                }
-                case KingsGame.CAMERA_TYPES.upView: {
-                    var fixedVec = KingsGame.gameobjects.player.position.clone();
-                    fixedVec.applyQuaternion(KingsGame.gameobjects.player.body.quaternion);
-                    KingsGame.camera.position.set(
-                        KingsGame.gameobjects.player.position.x,
-                        KingsGame.gameobjects.player.position.y - 14,
-                        KingsGame.gameobjects.player.position.z + 30
-                    );
-                    var vec = new THREE.Vector3(
-                        KingsGame.gameobjects.player.position.x,
-                        KingsGame.gameobjects.player.position.y - 15,
-                        KingsGame.gameobjects.player.position.z
-                    );
-                    KingsGame.camera.lookAt(vec);
-                    KingsGame.camera.up.set(0,0,1);
-                    break;
-                }
+
+        //KingsGame.road.update();
+        KingsGame.sky.position.set(
+            KingsGame.gameobjects.player.position.x,
+            KingsGame.gameobjects.player.position.y,
+            0
+        );
+        switch (KingsGame.camera.type) {
+            case KingsGame.CAMERA_TYPES.firstPerson: {
+                var fixedVec = new THREE.Vector3(0,-1.5,1.5);
+                fixedVec.applyQuaternion(KingsGame.gameobjects.player.body.quaternion);
+                fixedVec.add(KingsGame.gameobjects.player.position);
+                KingsGame.camera.position.set( fixedVec.x, fixedVec.y, fixedVec.z );
+                fixedVec.add(KingsGame.gameobjects.player.getDirection());
+                KingsGame.camera.lookAt(fixedVec);
+                var up = new THREE.Vector3(0,1,0);
+                up.applyQuaternion(KingsGame.gameobjects.player.model.quaternion);
+                KingsGame.camera.up.copy(up);
+                break;
             }
-        } else {
-            if(KingsGame.gameobjects.player.position.z < -15 && KingsGame.rain == null) {
-                KingsGame.rain = new KingsGame.ParticleSystem({
-                    sistemType: "fountain",
-                    fountainHeight: 2,
-                    position: KingsGame.gameobjects.player.position.clone(),
-                    gravity: new THREE.Vector3(0,0,-0.08),
-                    particleCount: 300,
-                    radius: 0.5,
-                    keepAlive: false,
-                    size: 5
-                });
-            }
-            if(KingsGame.rain != null) {
-                KingsGame.rain.update();
-                KingsGame.camera.lookAt(KingsGame.rain.position);
-            }else {
+            case KingsGame.CAMERA_TYPES.thirdPerson: {
+                var fixedVec = new THREE.Vector3(0,0,3);
+                fixedVec.applyQuaternion(KingsGame.gameobjects.player.body.quaternion);
+                fixedVec.add(KingsGame.gameobjects.player.position);
+                fixedVec.add(KingsGame.gameobjects.player.getDirection().negate());
+                //KingsGame.camera.position.set( fixedVec.x, fixedVec.y, fixedVec.z );
                 KingsGame.camera.lookAt(KingsGame.gameobjects.player.position);
+                KingsGame.camera.up.set(0,0,1);
+                break;
+            }
+            case KingsGame.CAMERA_TYPES.upView: {
+                var fixedVec = KingsGame.gameobjects.player.position.clone();
+                fixedVec.applyQuaternion(KingsGame.gameobjects.player.body.quaternion);
+                KingsGame.camera.position.set(
+                    KingsGame.gameobjects.player.position.x,
+                    KingsGame.gameobjects.player.position.y - 14,
+                    KingsGame.gameobjects.player.position.z + 30
+                );
+                var vec = new THREE.Vector3(
+                    KingsGame.gameobjects.player.position.x,
+                    KingsGame.gameobjects.player.position.y - 15,
+                    KingsGame.gameobjects.player.position.z
+                );
+                KingsGame.camera.lookAt(vec);
+                KingsGame.camera.up.set(0,0,1);
+                break;
             }
         }
+
         KingsGame.dirLight.position.set(
             KingsGame.gameobjects.player.position.x,
             KingsGame.gameobjects.player.position.y - 5,
@@ -1098,7 +1082,6 @@
         KingsGame.pastTime = KingsGame.actualTime;
         KingsGame.lag += KingsGame.elapsedTime;
         //while (KingsGame.lag >= KingsGame.MS_PER_UPDATE) {
-            console.log(KingsGame.lag);
             if(!KingsGame.paused) {
                 KingsGame.prototype.update();
             }
@@ -1107,10 +1090,10 @@
         if(KingsGame.ready) {
             Backbone.trigger( 'done' );
         }
-        var delta = 5 * KingsGame.clock.getDelta();
-		KingsGame.assets.lavaUniforms.time.value += 0.2 * delta;
         KingsGame.renderer.clear();
-        KingsGame.composer.render( delta );
+        //KingsGame.controls.update( KingsGame.clock.getDelta() );
+        KingsGame.oculuscontrol.update( KingsGame.clock.getDelta() );
+        KingsGame.effect.render( KingsGame.scene, KingsGame.camera );
     };
 
     KingsGame.prototype.lockPointer = function() {
@@ -1120,16 +1103,12 @@
             var pointerlockchange = function ( event ) {
                 if ( document.pointerLockElement === element || document.mozPointerLockElement === element || document.webkitPointerLockElement === element ) {
                     blocker.style.display = 'none';
-                    scoreContainer.style.display = "box";
-                    scoreContainer.style.display = '-webkit-box';
-                    scoreContainer.style.display = '-moz-box';
                     KingsGame.paused = false;
                 } else {
                     blocker.style.display = '-webkit-box';
                     blocker.style.display = '-moz-box';
                     blocker.style.display = 'box';
                     instructions.style.display = '';
-                    scoreContainer.style.display = "none";
                     KingsGame.paused = true;
                 }
             };
@@ -1144,7 +1123,6 @@
             document.addEventListener( 'mozpointerlockerror', pointerlockerror, false );
             document.addEventListener( 'webkitpointerlockerror', pointerlockerror, false );
             instructions.addEventListener( 'click', function ( event ) {
-                scoreContainer.style.display = "box";
                 instructions.style.display = 'none';
                 if( KingsGame.pointerLocked ) {
                     // Ask the browser to lock the pointer
@@ -1166,9 +1144,6 @@
                     }
                 } else {
                     blocker.style.display = 'none';
-                    scoreContainer.style.display = "box";
-                    scoreContainer.style.display = '-webkit-box';
-                    scoreContainer.style.display = '-moz-box';
                     KingsGame.paused = false;
                 }
             }, false );
@@ -1182,6 +1157,8 @@
 		KingsGame.assets.lavaUniforms.resolution.value.y = window.innerHeight;
         KingsGame.camera.aspect = window.innerWidth / window.innerHeight;
         KingsGame.camera.updateProjectionMatrix();
+        KingsGame.effect.setSize( window.innerWidth, window.innerHeight );
+        //KingsGame.controls.handleResize();
         KingsGame.renderer.setSize( window.innerWidth, window.innerHeight );
         KingsGame.composer.reset();
     }
@@ -1200,27 +1177,22 @@
 
         case 87: // w
         case 38: // forward
-            KingsGame.gameobjects.player.vehicle.setWheelForce(up ? 0 : KingsGame.gameobjects.player.maxForce, 2);
-            KingsGame.gameobjects.player.vehicle.setWheelForce(up ? 0 : -KingsGame.gameobjects.player.maxForce, 3);
+
             break;
         case 83: // s
         case 40: // backward
-            KingsGame.gameobjects.player.vehicle.setWheelForce(up ? 0 : -KingsGame.gameobjects.player.maxForce, 2);
-            KingsGame.gameobjects.player.vehicle.setWheelForce(up ? 0 : KingsGame.gameobjects.player.maxForce, 3);
+
             break;
         case 65: // a
         case 37: // left
-            KingsGame.gameobjects.player.vehicle.setSteeringValue(up ? 0 : KingsGame.gameobjects.player.maxSteerVal, 0);
-            KingsGame.gameobjects.player.vehicle.setSteeringValue(up ? 0 : KingsGame.gameobjects.player.maxSteerVal, 1);
+
             break;
         case 68: // d
         case 39: // right
-            KingsGame.gameobjects.player.vehicle.setSteeringValue(up ? 0 : -KingsGame.gameobjects.player.maxSteerVal, 0);
-            KingsGame.gameobjects.player.vehicle.setSteeringValue(up ? 0 : -KingsGame.gameobjects.player.maxSteerVal, 1);
+
             break;
         case 66:
-            KingsGame.gameobjects.player.vehicle.disableMotor(up ? 0 : -KingsGame.gameobjects.player.maxForce, 2);
-            KingsGame.gameobjects.player.vehicle.disableMotor(up ? 0 : KingsGame.gameobjects.player.maxForce, 3);
+
             break;
         }
     };
@@ -1244,14 +1216,12 @@
 
         case 39: // right
         case 68: // d
-            KingsGame.gameobjects.player.state = KingsGame.gameobjects.player.STATES.turningRight;
-            //KingsGame.gameobjects.player.body.angularVelocity.set(0,0,1);
+            //KingsGame.gameobjects.player.state = KingsGame.gameobjects.player.STATES.turningRight;
             break;
 
         case 37: // left
         case 65: // a
-            KingsGame.gameobjects.player.state = KingsGame.gameobjects.player.STATES.turningLeft;
-            //KingsGame.gameobjects.player.body.angularVelocity.set(0,0,-1);
+            //KingsGame.gameobjects.player.state = KingsGame.gameobjects.player.STATES.turningLeft;
             break;
         }
     };
@@ -1269,17 +1239,6 @@
         }
     };
 
-    KingsGame.prototype.bindSoundToMesh = function(mesh, soundPath) {
-        var audioLoader = new THREE.AudioLoader();
-        var sound = new THREE.PositionalAudio( KingsGame.listener );
-		audioLoader.load( soundPath, function( buffer ) {
-			sound2.setBuffer( buffer );
-			sound2.setRefDistance( 20 );
-			sound2.play();
-		});
-		mesh.add( sound );
-    };
-
     KingsGame.prototype.initLoadManager = function() {
         KingsGame.manager = new THREE.LoadingManager();
         KingsGame.manager.onProgress = function(item, loaded, total) {
@@ -1288,33 +1247,18 @@
             Backbone.trigger('loading', percentComplete);
         };
         KingsGame.manager.onLoad = function() {
-
+            KingsGame.ready = true;
         };
         KingsGame.manager.onError = function() {
-
+            alert("There was an error loading");
         };
     }
 
     KingsGame.prototype.initGround = function() {
         THREE.crossOrigin = "";
         KingsGame.groundMaterial = new CANNON.Material("groundMaterial");
-        var wheelMaterial = new CANNON.Material("wheelMaterial");
-        var wheelGroundContactMaterial = window.wheelGroundContactMaterial = new CANNON.ContactMaterial(wheelMaterial, KingsGame.groundMaterial, {
-            friction: 0.3,
-            restitution: 0,
-            contactEquationStiffness: 1000
-        });
-        KingsGame.world.addContactMaterial(wheelGroundContactMaterial);
 
-        KingsGame.road = new KingsGame.Road();
-
-        if(KingsGame.fireBall != null) {
-            KingsGame.scene.remove( KingsGame.fireBall );
-        }
-        var ballGeometry = new THREE.SphereGeometry( 60, 64, 64 );
-    	KingsGame.fireBall = new THREE.Mesh( ballGeometry, KingsGame.assets.lavaMaterial );
-    	KingsGame.fireBall.position.set(0, 165, 0);
-    	KingsGame.scene.add( KingsGame.fireBall );
+        //KingsGame.road = new KingsGame.Road();
 
         var groundBody = new CANNON.Body({
             mass: 0,
@@ -1322,44 +1266,19 @@
         });
         var groundShape = new CANNON.Plane();
         groundBody.addShape(groundShape);
-        var callback = function(e) {
-            if(e.body.name == "player" || e.body.name == "wheel") {
-                if(!KingsGame.gameOver) {
-                    Backbone.trigger("gameOver");
-                    KingsGame.gameOver = true;
-                }
-            }
-        };
-        groundBody.addEventListener("collide", callback);
         KingsGame.world.addBody(groundBody);
-    };
-
-    KingsGame.prototype.bumper = function(e){
-        if(e.body.name == "player" || e.body.name == "wheel") {
-            var dir = KingsGame.gameobjects.player.body.velocity.clone();
-            dir.normalize();
-            dir = dir.negate();
-            dir.z = 0.3;
-            dir = dir.scale(60);
-            KingsGame.gameobjects.player.body.angularVelocity.set(0,0,0);
-            KingsGame.gameobjects.player.body.inertia.set(0,0,0);
-            KingsGame.gameobjects.player.body.velocity.copy(dir);
-        }
     };
 
     KingsGame.prototype.initGameObjects = function() {
         KingsGame.gameobjects = {
             "player" : new KingsGame.Player({
-                modelPath: './assets/models/car/',
-                fileName: 'car',
-                useMTL: true,
+                //modelPath: './assets/models/car/',
+                //fileName: 'car',
+                //useMTL: true,
                 position: new THREE.Vector3(0,0,0),
                 rotation: new THREE.Vector3(90,180,0),
                 scale: new THREE.Vector3(1,1,1),
-                weight: 4,
-                colideEvent: function() {
-                    KingsGame.ready = true;
-                }
+                weight: 0
             }),
             "crate" : new KingsGame.GameObject({
                 modelPath: './assets/models/crate/',
@@ -1370,9 +1289,9 @@
                 weight: 4,
                 bounciness: 0.9,
                 //soundPath: './assets/sounds/running_hell.mp3',
-                colideEvent: KingsGame.prototype.bumper
             }),
         };
+        KingsGame.gameobjects.player.pastAccel = [0,0,0];
     };
 
     KingsGame.prototype.alreadyLoaded = function(name) {
@@ -1401,34 +1320,6 @@
             bumpScale  :  0.45,
         });
 
-        var smap = new THREE.TextureLoader(KingsGame.manager).load( "./assets/textures/Supergram1.png" );
-        KingsGame.assets.acceleratorTexture = new THREE.MeshPhongMaterial({
-            shininess  :  0.1,
-            alphaMap   :  smap,
-            map        :  smap,
-        });
-
-        var textureLoader = new THREE.TextureLoader(KingsGame.manager);
-		KingsGame.assets.lavaUniforms = {
-			fogDensity: { value: 0.01 },
-			fogColor:   { value: new THREE.Vector3( 0, 0, 0 ) },
-			time:       { value: 1.0 },
-			resolution: { value: new THREE.Vector2() },
-			uvScale:    { value: new THREE.Vector2( 3.0, 1.0 ) },
-			texture1:   { value: textureLoader.load( './assets/textures/cloud.png' ) },
-			texture2:   { value: textureLoader.load( './assets/textures/lava.jpg' ) }
-		};
-
-		KingsGame.assets.lavaUniforms.texture1.value.wrapS = KingsGame.assets.lavaUniforms.texture1.value.wrapT = THREE.RepeatWrapping;
-		KingsGame.assets.lavaUniforms.texture2.value.wrapS = KingsGame.assets.lavaUniforms.texture2.value.wrapT = THREE.RepeatWrapping;
-
-    	KingsGame.assets.lavaMaterial = new THREE.ShaderMaterial({
-    	    uniforms: KingsGame.assets.lavaUniforms,
-    		vertexShader:   document.getElementById( 'vertexShaderLava'   ).textContent,
-    		fragmentShader: document.getElementById( 'fragmentShaderLava' ).textContent,
-            side: THREE.DoubleSide
-    	});
-
         KingsGame.assets.particleTexture = new THREE.TextureLoader(KingsGame.manager).load("./assets/textures/particle.png");
     };
 
@@ -1440,7 +1331,7 @@
         KingsGame.score = 0;
         KingsGame.paused = false;
 
-        KingsGame.road.destroy();
+        //KingsGame.road.destroy();
         KingsGame.prototype.initGround();
         KingsGame.gameobjects.player.reset();
 
@@ -1450,8 +1341,51 @@
         }
     };
 
+    KingsGame.prototype.sendMessage = function(message) {
+        chrome.runtime.sendMessage(KingsGame.serialExtensionId, {
+                data: message
+            },
+            function (response) {
+                console.log(response);
+            }
+        );
+    };
+
     $.fn.initGame = function( parameters ) {
         if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+        KingsGame.serialExtensionId = "mgfmopegkdlopmkaodehjmdmpbjphlnc";
+        KingsGame.port = chrome.runtime.connect(KingsGame.serialExtensionId);
+        KingsGame.port.onMessage.addListener(function(msg) {
+            if(KingsGame.ready){
+                var gyro = msg.substring(msg.indexOf("#FIL:")+5,msg.length-1);
+                gyro = gyro.split(",");
+                KingsGame.gameobjects.player.rotation.x = gyro[2];
+                KingsGame.gameobjects.player.rotation.y = gyro[1];
+                KingsGame.gameobjects.player.rotation.z = gyro[0];
+                var accel = msg.substring(msg.indexOf("#FIL:")+5,msg.length-1);
+                accel = accel.split(",");
+                console.log(accel);
+                var filterThreshold = 1;
+                var filter = function(valor) {
+                    KingsGame.gameobjects.player.pastAccel = accel;
+                    if (valor[0] > KingsGame.gameobjects.player.pastAccel[0] + filterThreshold || valor[0] < KingsGame.gameobjects.player.pastAccel[0] - filterThreshold) {
+                        KingsGame.gameobjects.player.position.z += valor[0] - KingsGame.gameobjects.player.pastAccel[0];
+                        KingsGame.gameobjects.player.pastAccel[0] = valor[0];
+                    }
+                    if (valor[1] > KingsGame.gameobjects.player.pastAccel[1] + filterThreshold || valor[1] < KingsGame.gameobjects.player.pastAccel[1] - filterThreshold) {
+                        KingsGame.gameobjects.player.position.y += valor[1] - KingsGame.gameobjects.player.pastAccel[1];
+                        KingsGame.gameobjects.player.pastAccel[1] = valor[1];
+                    }
+                    if (valor[2] > KingsGame.gameobjects.player.pastAccel[2] + filterThreshold || valor[2] < KingsGame.gameobjects.player.pastAccel[2] - filterThreshold) {
+                        KingsGame.gameobjects.player.position.x += valor[2] - KingsGame.gameobjects.player.pastAccel[2];
+                        KingsGame.gameobjects.player.pastAccel[2] = valor[2];
+                    }
+                };
+
+                filter(accel);
+            }
+        });
 
         KingsGame.loadingScreen = new LoadingScreen();
         KingsGame.loadingScreen.render();
@@ -1465,12 +1399,12 @@
         });
         $(document.body).append( KingsGame.gameOverScreen.$el );
 
-        KingsGame.HAZARDS = {
-            "plain": 0,
-            "bumpers": 1,
-            "accelerator": 2,
-            "pit": 3,
-            "meteorites": 4,
+        KingsGame.OBJECTIVES = {
+            "ground_figure": 0,
+            "hanging_figure": 1,
+            "water_melon": 2,
+            "target": 3,
+            "man_target": 4,
         };
 
         KingsGame.DIFICULTY = {
@@ -1578,7 +1512,7 @@
 		audioLoader.load( './assets/sounds/Main Entrance.mp3', function( buffer ) {
 			sound.setBuffer( buffer );
 			sound.setLoop(true);
-			sound.setVolume(0.3);
+			sound.setVolume(0.0);
 			sound.play();
 		});
 
@@ -1591,14 +1525,10 @@
         KingsGame.renderer.autoClear = false;
         $(this).append( KingsGame.renderer.domElement );
 
-        var renderModel = new THREE.RenderPass( KingsGame.scene, KingsGame.camera );
-		var effectBloom = new THREE.BloomPass( 0 );
-		var effectFilm = new THREE.FilmPass( 0, 0, 1024, false );
-		effectFilm.renderToScreen = true;
-		KingsGame.composer = new THREE.EffectComposer( KingsGame.renderer );
-		KingsGame.composer.addPass( renderModel );
-		KingsGame.composer.addPass( effectBloom );
-		KingsGame.composer.addPass( effectFilm );
+        KingsGame.effect = new THREE.OculusRiftEffect( KingsGame.renderer, { worldScale: 1 } );
+        KingsGame.effect.setSize( window.innerWidth, window.innerHeight );
+
+        KingsGame.oculuscontrol = new THREE.OculusControls( KingsGame.camera );
 
         KingsGame.stats = new Stats();
 		$(this).append( KingsGame.stats.dom );
@@ -1607,6 +1537,8 @@
         document.addEventListener( 'keydown', KingsGame.prototype.onKeyDown, false );
         document.addEventListener( 'keyup', KingsGame.prototype.onKeyUp, false );
         document.addEventListener( 'mousemove', KingsGame.prototype.onMouseMove, false );
+
+        KingsGame.oculuscontrol.connect();
 
         KingsGame.prototype.render();
     };
