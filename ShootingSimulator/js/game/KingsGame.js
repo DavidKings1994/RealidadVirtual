@@ -1,17 +1,18 @@
 (function(root, factory) {
     'use strict';
     if (typeof define === 'function' && define.amd) {
-        define(['jquery','three','underscore','cannon','Backbone'], factory);
+        define(['jquery','three','underscore','cannon','Backbone','tracking'], factory);
     } else if (typeof exports !== 'undefined') {
-        module.exports = factory(require('jquery','three','underscore','cannon','Backbone'));
+        module.exports = factory(require('jquery','three','underscore','cannon','Backbone','tracking'));
     } else {
-        root.myModule = factory(root.jquery, root.three, root.underscore, root.cannon, root.Backbone);
+        root.myModule = factory(root.jquery, root.three, root.underscore, root.cannon, root.Backbone, root.tracking);
     }
-}(this, function($, THREE, _, CANNON, Backbone) {
+}(this, function($, THREE, _, CANNON, Backbone, tracking) {
     'use strict';
 
     var KingsGame = window.KingsGame || {};
     window.THREE = THREE;
+    window.tracking = tracking;
 
     require('./../../node_modules/three/examples/js/shaders/ConvolutionShader.js');
 	require('./../../node_modules/three/examples/js/shaders/CopyShader.js');
@@ -35,6 +36,7 @@
     var LoadingScreen = require( __dirname + '/../views/loadingScreen.js');
     var GameOverScreen = require( __dirname + '/../views/gameOverScreen.js');
     var Stats = require('./../../node_modules/three/examples/js/libs/stats.min.js');
+    var Tracking = require('./../../node_modules/tracking/build/tracking-min.js');
 
     var KingsGame = ( function() {
         function KingsGame() {
@@ -1357,35 +1359,29 @@
         KingsGame.serialExtensionId = "mgfmopegkdlopmkaodehjmdmpbjphlnc";
         KingsGame.port = chrome.runtime.connect(KingsGame.serialExtensionId);
         KingsGame.port.onMessage.addListener(function(msg) {
+            console.log(msg);
             if(KingsGame.ready){
                 var gyro = msg.substring(msg.indexOf("#FIL:")+5,msg.length-1);
                 gyro = gyro.split(",");
                 KingsGame.gameobjects.player.rotation.x = gyro[2];
                 KingsGame.gameobjects.player.rotation.y = gyro[1];
                 KingsGame.gameobjects.player.rotation.z = gyro[0];
-                var accel = msg.substring(msg.indexOf("#FIL:")+5,msg.length-1);
-                accel = accel.split(",");
-                console.log(accel);
-                var filterThreshold = 1;
-                var filter = function(valor) {
-                    KingsGame.gameobjects.player.pastAccel = accel;
-                    if (valor[0] > KingsGame.gameobjects.player.pastAccel[0] + filterThreshold || valor[0] < KingsGame.gameobjects.player.pastAccel[0] - filterThreshold) {
-                        KingsGame.gameobjects.player.position.z += valor[0] - KingsGame.gameobjects.player.pastAccel[0];
-                        KingsGame.gameobjects.player.pastAccel[0] = valor[0];
-                    }
-                    if (valor[1] > KingsGame.gameobjects.player.pastAccel[1] + filterThreshold || valor[1] < KingsGame.gameobjects.player.pastAccel[1] - filterThreshold) {
-                        KingsGame.gameobjects.player.position.y += valor[1] - KingsGame.gameobjects.player.pastAccel[1];
-                        KingsGame.gameobjects.player.pastAccel[1] = valor[1];
-                    }
-                    if (valor[2] > KingsGame.gameobjects.player.pastAccel[2] + filterThreshold || valor[2] < KingsGame.gameobjects.player.pastAccel[2] - filterThreshold) {
-                        KingsGame.gameobjects.player.position.x += valor[2] - KingsGame.gameobjects.player.pastAccel[2];
-                        KingsGame.gameobjects.player.pastAccel[2] = valor[2];
-                    }
-                };
-
-                filter(accel);
             }
         });
+
+        KingsGame.colors = new tracking.ColorTracker(['yellow']);
+
+        KingsGame.colors.on('track', function(event) {
+            if (event.data.length === 0) {
+                // No colors were detected in this frame.
+            } else {
+                event.data.forEach(function(rect) {
+                    console.log(rect.x, rect.y, rect.height, rect.width, rect.color);
+                });
+            }
+        });
+
+        tracking.track('#myVideo', KingsGame.colors, { camera: true });
 
         KingsGame.loadingScreen = new LoadingScreen();
         KingsGame.loadingScreen.render();

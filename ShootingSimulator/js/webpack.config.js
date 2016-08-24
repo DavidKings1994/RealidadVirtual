@@ -14,6 +14,7 @@ module.exports = {
             'underscore': __dirname + '/../node_modules/underscore/underscore.js',
             'three': __dirname + '/../node_modules/three/build/three.js',
             'cannon': __dirname + '/../node_modules/cannon/build/cannon.js',
+            'tracking': __dirname + '/../node_modules/tracking/build/tracking.js'
         }
     },
     module: {

@@ -83,6 +83,15 @@ SerialConnection.prototype.disconnect = function() {
 
 ////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////
+var externalPort;
+
+chrome.runtime.onConnectExternal.addListener(function(port) {
+    port.postMessage("Connected to Chrome App");
+    port.onMessage.addListener(function(msg) {
+        log('from web site: ' + msg);
+    });
+    externalPort = port;
+});
 
 var connection = new SerialConnection();
 
@@ -92,7 +101,8 @@ connection.onConnect.addListener(function() {
 });
 
 connection.onReadLine.addListener(function(line) {
-    log('read line: ' + line);
+    //log('read line: ' + line);
+    externalPort.postMessage(line);
 });
 
 var onGetDevices = function(ports) {
