@@ -1,0 +1,88 @@
+M1911A1
+
+April 2007
+
+Thank you for downloading my first model. Sorry, I only had time to do the external parts. The owner wanted his gun back. (My wife thought I was committing suicide when I tried to get a frontal view).
+
+Copyright - Hell no! You can say it's yours if you want. I had fun making this, so enjoy. If you use it for anything, just let me know so I can enoy your work too.
+
+Textures and Shaders - Oh C'mon, you can do that, I know you're much better than I am at this stuff. I'm still learning.
+
+I put checkering on the magazine release. There should be more on the recoil spring plug, the slide stop, the safety, the hammer and the mainspring housing but the poly count was already more than I expected so I didnt put them. The checkering on the grips is impossible. You can try displacing it but the poly count will be enormous. A bump map on the grips should render ok.
+
+You want the internal parts? Just send me $100. I'm just kidding, send me 6 beers and I will start right away. I'm still kidding. One of these days I"ll get around to doing the internal parts.
+
+Hey, let me know what you think at chucknepo@yahoo.com
+
+Thanks,
+Chuck
+----------------------
+
+
+
+July 2007
+
+Added materials 
+----------------------
+
+
+
+April 2009
+
+Adjusted the materials added bump maps for the markings.
+
+
+Re the markings - the markings are consistent with 1942 - 1943 colt production. The serial number is imaginary.
+
+
+Re the bump maps - connect the bumps to the following materials. Adjust the bump depth to the way you like. After you render check my renders to see if you attached them correctly.
+
+Material     Bump map jpg
+
+Back         BackBump            this goes to the backstrap of the mainspring housing
+
+ChecksSmall  ChecksSmallBump     small checkers that go to the recoil spring plug, top of the slide lock, top of the hammer, and to the top and bottom of the thumb safety
+
+FrameLeft    FrameLeftBump       goes to left of frame, contains Col. Waldemar Brobergs inspection mark
+
+FrameRight   FrameRightBump      goes to right of frame, contains US Govt markings and serial number
+
+GripLeft     GripLeftBump        Left grip, remember LEFT not right. It looks funny if they are wrong.
+
+GripRight    GripRightBump       Right grip, remember RiGHT not left
+
+SlideLeft    SlideLeftBump       Left of slide, contains the patents and Colt logo
+
+Trigger      ChecksSmallBump     goes to the front of the trigger
+
+
+Re the model - since 2007 I learned that you can make the same quality model with only half the polys that I used here. But I don't have time (or I'm just too lazy) to redo the whole model again. That's why I added the bumps. So this is still the same old (lousy) model. :)
+
+
+Re the materials - I tried and I tried, and I tweaked and tweaked but I can't seem to get a realistic gun metal color. It looks OK in the viewport but comes out different when I render. So I give up. If anyone can get a good realistic color, please send me the HSV or RGB values so I can try it out. I think the best way is to put a texture on the material so the color wont change if you change the lighting. Feel free to change the color. 
+
+
+Re the formats - available formats are maya 2009, max 2009, obj, 3ds, lwo and blend
+
+maya 2009 - if you do not have maya 2009, open the .ma file with wordpad, replace "2009" with your version of maya and save. There should be 4 instances that you have to change.
+
+max 2009 - I asked a friend to import my obj file and save it as max. If you do not have max 2009, I cannot help you.
+
+other formats - I imported my obj file into blender and exported as 3ds, lwo and blend.
+
+
+REMEMBER these are only bump maps, not mesh. So don't render too close. 
+
+
+As usual, copyright shmopyright. Use it wherever you like. It's free. If you make a nice rencer I would love to see it. If you use it in a commercial or video or something, credit would be nice. But it's ok if you don't so don't worry about it. You can even say it is yours, but you will burn in hell.
+
+
+Kudos to all the really great 3d artists out there. Your work is a great inspiration (even if I can't afford them, I can look at the renders.) Many thanks to people like Plutonius and Grokodaemon who got me interested in modeling guns. 
+
+
+You can contact me at chucknepo@yahoo.com if you have any questions.
+
+
+Have fun everyone!
+
+Chuck
