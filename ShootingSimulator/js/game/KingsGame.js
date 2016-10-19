@@ -25,16 +25,23 @@
 
 	require('./../../node_modules/three/examples/js/postprocessing/EffectComposer.js');
 	require('./../../node_modules/three/examples/js/postprocessing/ShaderPass.js');
+    require('./../../node_modules/three/examples/js/postprocessing/ClearPass.js');
+    require('./../../node_modules/three/examples/js/postprocessing/CubeTexturePass.js');
 	require('./../../node_modules/three/examples/js/postprocessing/MaskPass.js');
 	require('./../../node_modules/three/examples/js/postprocessing/RenderPass.js');
 	require('./../../node_modules/three/examples/js/postprocessing/BloomPass.js');
 	require('./../../node_modules/three/examples/js/postprocessing/FilmPass.js');
+    require('./../../node_modules/three/examples/js/effects/StereoEffect.js');
+    require('./../../node_modules/three/examples/js/shaders/FXAAShader.js');
+	require('./../../node_modules/three/examples/js/shaders/ConvolutionShader.js');
+	require('./../../node_modules/three/examples/js/shaders/LuminosityHighPassShader.js');
+	require('./../../node_modules/three/examples/js/postprocessing/UnrealBloomPass.js');
 
     require('./../../node_modules/three/examples/js/controls/PointerLockControls.js');
     require('./../../node_modules/three/examples/js/loaders/OBJLoader.js');
     require('./../../node_modules/three/examples/js/loaders/MTLLoader.js');
     require('./../../node_modules/three/examples/js/utils/GeometryUtils.js');
-    require('./../../node_modules/three/examples/js/controls/OrbitControls.js');
+    require('./../../node_modules/three/examples/js/controls/TrackballControls.js');
     var Detector = require('./../../node_modules/three/examples/js/Detector.js');
     var LoadingScreen = require( __dirname + '/../views/loadingScreen.js');
     var GameOverScreen = require( __dirname + '/../views/gameOverScreen.js');
@@ -923,6 +930,7 @@
 
     KingsGame.prototype.update = function () {
         KingsGame.prototype.updatePhysics();
+
         var elements = _.toArray(KingsGame.gameobjects);
         if(KingsGame.ready) {
             for (var i = 0; i < elements.length; i++) {
@@ -931,52 +939,6 @@
         }
 
         //KingsGame.road.update();
-        KingsGame.sky.position.set(
-            KingsGame.gameobjects.player.position.x,
-            KingsGame.gameobjects.player.position.y,
-            0
-        );
-        switch (KingsGame.camera.type) {
-            case KingsGame.CAMERA_TYPES.firstPerson: {
-                var fixedVec = new THREE.Vector3(0,-1.5,1.5);
-                fixedVec.applyQuaternion(KingsGame.gameobjects.player.body.quaternion);
-                fixedVec.add(KingsGame.gameobjects.player.position);
-                KingsGame.camera.position.set( fixedVec.x, fixedVec.y, fixedVec.z );
-                fixedVec.add(KingsGame.gameobjects.player.getDirection());
-                KingsGame.camera.lookAt(fixedVec);
-                var up = new THREE.Vector3(0,1,0);
-                up.applyQuaternion(KingsGame.gameobjects.player.model.quaternion);
-                KingsGame.camera.up.copy(up);
-                break;
-            }
-            case KingsGame.CAMERA_TYPES.thirdPerson: {
-                var fixedVec = new THREE.Vector3(0,0,3);
-                fixedVec.applyQuaternion(KingsGame.gameobjects.player.body.quaternion);
-                fixedVec.add(KingsGame.gameobjects.player.position);
-                fixedVec.add(KingsGame.gameobjects.player.getDirection().negate());
-                //KingsGame.camera.position.set( fixedVec.x, fixedVec.y, fixedVec.z );
-                KingsGame.camera.lookAt(KingsGame.gameobjects.player.position);
-                KingsGame.camera.up.set(0,0,1);
-                break;
-            }
-            case KingsGame.CAMERA_TYPES.upView: {
-                var fixedVec = KingsGame.gameobjects.player.position.clone();
-                fixedVec.applyQuaternion(KingsGame.gameobjects.player.body.quaternion);
-                KingsGame.camera.position.set(
-                    KingsGame.gameobjects.player.position.x,
-                    KingsGame.gameobjects.player.position.y - 14,
-                    KingsGame.gameobjects.player.position.z + 30
-                );
-                var vec = new THREE.Vector3(
-                    KingsGame.gameobjects.player.position.x,
-                    KingsGame.gameobjects.player.position.y - 15,
-                    KingsGame.gameobjects.player.position.z
-                );
-                KingsGame.camera.lookAt(vec);
-                KingsGame.camera.up.set(0,0,1);
-                break;
-            }
-        }
 
         KingsGame.dirLight.position.set(
             KingsGame.gameobjects.player.position.x,
@@ -985,11 +947,29 @@
         );
         KingsGame.dirLight.target.position.copy(KingsGame.gameobjects.player.position);
         KingsGame.dirLight.shadow.camera.updateProjectionMatrix();
+
+        KingsGame.stereoCamera.update(KingsGame.camera);
     };
 
     KingsGame.prototype.render = function () {
         requestAnimationFrame( KingsGame.prototype.render );
         KingsGame.stats.update();
+
+        KingsGame.camera.updateMatrixWorld( true );
+        var newColor = KingsGame.clearPass.clearColor;
+		switch( KingsGame.params.clearColor ) {
+			case 'blue': newColor = 0x0000ff; break;
+			case 'red': newColor = 0xff0000; break;
+			case 'green': newColor = 0x00ff00; break;
+			case 'white': newColor = 0xffffff; break;
+			case 'black': newColor = 0x000000; break;
+		}
+		KingsGame.clearPass.enabled = KingsGame.params.clearPass;
+		KingsGame.clearPass.clearColor = newColor;
+		KingsGame.clearPass.clearAlpha = KingsGame.params.clearAlpha;
+		KingsGame.cubeTexturePassP.enabled = KingsGame.params.cubeTexturePass;
+		KingsGame.cubeTexturePassP.opacity = KingsGame.params.cubeTexturePassOpacity;
+		KingsGame.renderPass.enabled = KingsGame.params.renderPass;
 
         KingsGame.actualTime += KingsGame.clock.getDelta();
         KingsGame.elapsedTime = KingsGame.actualTime - KingsGame.pastTime;
@@ -1005,14 +985,25 @@
             Backbone.trigger( 'done' );
         }
         KingsGame.renderer.clear();
+        KingsGame.renderer.toneMappingExposure = Math.pow( KingsGame.params.exposure, 4.0 );
         //KingsGame.controls.update( KingsGame.clock.getDelta() );
-        KingsGame.oculuscontrol.update( KingsGame.clock.getDelta() );
+        //KingsGame.oculuscontrol.update( KingsGame.clock.getDelta() );
         if(KingsGame.oculusShader) {
-            KingsGame.effect.render( KingsGame.scene, KingsGame.camera );
+            //KingsGame.effect.render( KingsGame.scene, KingsGame.camera );
+
+            KingsGame.renderer.setViewport( 0, 0, window.innerWidth / 2, window.innerHeight);
+            KingsGame.renderPass.camera = KingsGame.stereoCamera.cameraL; //note: bending rule by setting RenderPass.camera directly without set/get methods
+            KingsGame.composer.render();
+
+            KingsGame.renderer.setViewport( window.innerWidth / 2, 0, window.innerWidth / 2, window.innerHeight);
+            KingsGame.renderPass.camera = KingsGame.stereoCamera.cameraR; //note: bending rule by setting RenderPass.camera directly without set/get methods
+            KingsGame.composer.render();
+
             KingsGame.effect.setSize( window.innerWidth, window.innerHeight );
             KingsGame.renderer.setSize( window.innerWidth, window.innerHeight );
         } else {
-            KingsGame.renderer.render( KingsGame.scene, KingsGame.camera );
+            KingsGame.composer.render();
+            //KingsGame.renderer.render( KingsGame.scene, KingsGame.camera );
             KingsGame.effect.setSize( window.innerWidth, window.innerHeight );
             KingsGame.renderer.setSize( window.innerWidth, window.innerHeight );
         }
@@ -1026,7 +1017,9 @@
                 if ( document.pointerLockElement === element || document.mozPointerLockElement === element || document.webkitPointerLockElement === element ) {
                     blocker.style.display = 'none';
                     KingsGame.paused = false;
+					KingsGame.controls.enabled = true;
                 } else {
+					KingsGame.controls.enabled = false;
                     blocker.style.display = '-webkit-box';
                     blocker.style.display = '-moz-box';
                     blocker.style.display = 'box';
@@ -1079,8 +1072,12 @@
 		KingsGame.assets.lavaUniforms.resolution.value.y = window.innerHeight;
         KingsGame.camera.aspect = window.innerWidth / window.innerHeight;
         KingsGame.camera.updateProjectionMatrix();
+        var pixelRatio = KingsGame.renderer.getPixelRatio();
+		var newWidth  = Math.floor( window.innerWidth / pixelRatio ) || 1;
+		var newHeight = Math.floor( window.innerHeight / pixelRatio ) || 1;
+		KingsGame.composer.setSize( newWidth, newHeight );
         KingsGame.effect.setSize( window.innerWidth, window.innerHeight );
-        //KingsGame.controls.handleResize();
+        KingsGame.controls.handleResize();
         KingsGame.renderer.setSize( window.innerWidth, window.innerHeight );
         KingsGame.composer.reset();
     }
@@ -1192,7 +1189,7 @@
 
         var groundBody = new CANNON.Body({
             mass: 0,
-            position: new CANNON.Vec3(0,0,-10)
+            position: new CANNON.Vec3(0,0,-12.5)
         });
         var groundShape = new CANNON.Plane();
         groundBody.addShape(groundShape);
@@ -1213,7 +1210,7 @@
                 fileName: 'Colt',
                 useMTL: true,
                 position: new THREE.Vector3(0,10,0),
-                rotation: new THREE.Vector3(90,180,0),
+                rotation: new THREE.Vector3(90,-90,0),
                 scale: new THREE.Vector3(0.3,0.3,0.3),
                 weight: 0
             }),
@@ -1234,17 +1231,16 @@
                 scale: new THREE.Vector3(2,2,2),
                 weight: 4,
             }),
-            "cabine" : new KingsGame.GameObject({
-                modelPath: './assets/models/Cabana/',
-                fileName: 'CabinaRender',
-                useMTL: true,
-                position: new THREE.Vector3(-5,10,-10),
-                rotation: new THREE.Vector3(90,180,0),
-                scale: new THREE.Vector3(1,1,1),
-                weight: 0,
-            }),
+            // "cabine" : new KingsGame.GameObject({
+            //     modelPath: './assets/models/Cabana/',
+            //     fileName: 'CabinaRender',
+            //     useMTL: true,
+            //     position: new THREE.Vector3(-5,10,-10),
+            //     rotation: new THREE.Vector3(90,180,0),
+            //     scale: new THREE.Vector3(1,1,1),
+            //     weight: 0,
+            // }),
         };
-        KingsGame.gameobjects.player.pastAccel = [0,0,0];
     };
 
     KingsGame.prototype.alreadyLoaded = function(name) {
@@ -1260,68 +1256,80 @@
         KingsGame.assets = {};
         KingsGame.assets.meshes = [];
 
-        var bmap = new THREE.TextureLoader(KingsGame.manager).load( "./assets/textures/ground_b.png" );
+        var bmap = new THREE.TextureLoader(KingsGame.manager).load( "./assets/textures/DeathValley.heightmap.jpg" );
         bmap.wrapS = bmap.wrapT = THREE.RepeatWrapping;
         bmap.repeat.set( 50, 50 );
         var tmap = new THREE.TextureLoader(KingsGame.manager).load( "./assets/textures/rgb.jpg" );
         tmap.wrapS = tmap.wrapT = THREE.RepeatWrapping;
         tmap.repeat.set( 1, 1 );
-        var smap1 = new THREE.TextureLoader(KingsGame.manager).load( "./assets/textures/ground_d.jpg" );
+        var smap1 = new THREE.TextureLoader(KingsGame.manager).load( "./assets/textures/151.jpg" );
         smap1.wrapS = smap1.wrapT = THREE.RepeatWrapping;
-        smap1.repeat.set( 50, 50 );
-        var smap2 = new THREE.TextureLoader(KingsGame.manager).load( "./assets/textures/Groundplants.jpg" );
+        smap1.repeat.set( 400, 400 );
+        var smap2 = new THREE.TextureLoader(KingsGame.manager).load( "./assets/textures/groundgrass2.png" );
         smap2.wrapS = smap2.wrapT = THREE.RepeatWrapping;
-        smap2.repeat.set( 50, 50 );
-        KingsGame.assets.groundTexture = new THREE.MeshPhongMaterial({
-            shininess  :  0,
-            bumpMap    :  bmap,
-            map        :  smap2,
-            bumpScale  :  10,
-            specular   :  0
-        });
+        smap2.repeat.set( 200, 200 );
+        // KingsGame.assets.groundTexture = new THREE.MeshPhongMaterial({
+        //     shininess  :  0,
+        //     bumpMap    :  bmap,
+        //     map        :  smap2,
+        //     bumpScale  :  10,
+        //     specular   :  0,
+        //     transparent: true,
+        //     opacity    : 1
+        // });
 
-    	// var customUniforms = {
-    	// 	bumpTexture:	{ type: "t", value: bmap },
-        //     textureMap:	    { type: "t", value: tmap },
-    	// 	bumpScale:	    { type: "f", value: 100 },
-    	// 	rockyTexture:	{ type: "t", value: smap1 },
-    	// 	snowyTexture:	{ type: "t", value: smap2 },
-        //     grassTexture:	{ type: "t", value: smap2 },
-    	// };
+    	var customUniforms = {
+    		bumpTexture:	{ type: "t", value: bmap },
+            textureMap:	    { type: "t", value: tmap },
+    		bumpScale:	    { type: "f", value: 100 },
+    		rockyTexture:	{ type: "t", value: smap1 },
+    		snowyTexture:	{ type: "t", value: smap2 },
+            grassTexture:	{ type: "t", value: smap2 },
+    	};
 
-    	// KingsGame.assets.groundTexture = new THREE.ShaderMaterial({
-    	//     uniforms: customUniforms,
-    	// 	vertexShader:   document.getElementById( 'vertexBumpShader'   ).textContent,
-    	// 	fragmentShader: document.getElementById( 'fragmentBumpShader' ).textContent,
-    	// });
+    	KingsGame.assets.groundTexture = new THREE.ShaderMaterial({
+    	    uniforms: customUniforms,
+    		vertexShader:   document.getElementById( 'vertexBumpShader'   ).textContent,
+    		fragmentShader: document.getElementById( 'fragmentBumpShader' ).textContent,
+    	});
 
         KingsGame.assets.particleTexture = new THREE.TextureLoader(KingsGame.manager).load("./assets/textures/particle.png");
         KingsGame.assets.treeTexture = new THREE.TextureLoader(KingsGame.manager).load("./assets/textures/tree.png");
         KingsGame.assets.treeTexture2 = new THREE.TextureLoader(KingsGame.manager).load("./assets/textures/tree2.png");
         KingsGame.assets.treeTexture3 = new THREE.TextureLoader(KingsGame.manager).load("./assets/textures/tree4.png");
         KingsGame.assets.grassTexture = new THREE.TextureLoader(KingsGame.manager).load("./assets/textures/grass.png");
+        KingsGame.assets.targetTexture = new THREE.TextureLoader(KingsGame.manager).load("./assets/textures/target01.png");
+
+        for (var i = 0; i < 10; i++) {
+            KingsGame.assets.targetMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.targetTexture });
+            KingsGame.assets.targetSprite = new THREE.Sprite( KingsGame.assets.targetMaterial );
+            KingsGame.assets.targetSprite.position.set( -80 + (i*16), 200 + (60 * Math.random()), 5 );
+            KingsGame.assets.targetSprite.scale.set( 10, 10, 1.0 );
+            KingsGame.assets.targetSprite.castShadow = true;
+            KingsGame.scene.add( KingsGame.assets.targetSprite );
+        }
 
         for (var i = 0; i < 100; i++) {
             var rand = (3 * Math.random());
             if(rand >= 0 && rand < 1) {
                 KingsGame.assets.treeMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.treeTexture });
                 KingsGame.assets.treeSprite = new THREE.Sprite( KingsGame.assets.treeMaterial );
-                KingsGame.assets.treeSprite.position.set( 80 + (60 * Math.random()), i*3, 0 );
-            	KingsGame.assets.treeSprite.scale.set( 10, 20, 1.0 );
+                KingsGame.assets.treeSprite.position.set( 100 + (60 * Math.random()), i*3, 10 );
+            	KingsGame.assets.treeSprite.scale.set( 20, 40, 1.0 );
                 KingsGame.assets.treeSprite.castShadow = true;
             	KingsGame.scene.add( KingsGame.assets.treeSprite );
             } else if(rand >= 1 && rand < 2) {
                 KingsGame.assets.treeMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.treeTexture2 });
                 KingsGame.assets.treeSprite2 = new THREE.Sprite( KingsGame.assets.treeMaterial );
-                KingsGame.assets.treeSprite2.position.set( 80 + (60 * Math.random()), i*3, 0 );
-            	KingsGame.assets.treeSprite2.scale.set( 15, 20, 1.0 );
+                KingsGame.assets.treeSprite2.position.set( 100 + (60 * Math.random()), i*3, 10 );
+            	KingsGame.assets.treeSprite2.scale.set( 30, 40, 1.0 );
                 KingsGame.assets.treeSprite2.castShadow = true;
             	KingsGame.scene.add( KingsGame.assets.treeSprite2 );
             } else if (rand >= 2 && rand <= 3) {
                 KingsGame.assets.treeMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.treeTexture3 });
                 KingsGame.assets.treeSprite3 = new THREE.Sprite( KingsGame.assets.treeMaterial );
-                KingsGame.assets.treeSprite3.position.set( 80 + (60 * Math.random()), i*3, 0 );
-            	KingsGame.assets.treeSprite3.scale.set( 20, 20, 1.0 );
+                KingsGame.assets.treeSprite3.position.set( 100 + (60 * Math.random()), i*3, 10 );
+            	KingsGame.assets.treeSprite3.scale.set( 40, 40, 1.0 );
                 KingsGame.assets.treeSprite3.castShadow = true;
             	KingsGame.scene.add( KingsGame.assets.treeSprite3 );
             }
@@ -1330,32 +1338,32 @@
             if(rand >= 0 && rand < 1) {
                 KingsGame.assets.treeMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.treeTexture });
                 KingsGame.assets.treeSprite = new THREE.Sprite( KingsGame.assets.treeMaterial );
-                KingsGame.assets.treeSprite.position.set( -80 - (60 * Math.random()), i*3, 0 );
-            	KingsGame.assets.treeSprite.scale.set( 10, 20, 1.0 );
+                KingsGame.assets.treeSprite.position.set( -100 - (60 * Math.random()), i*3, 10 );
+            	KingsGame.assets.treeSprite.scale.set( 20, 40, 1.0 );
                 KingsGame.assets.treeSprite.castShadow = true;
             	KingsGame.scene.add( KingsGame.assets.treeSprite );
             } else if(rand >= 1 && rand < 2) {
                 KingsGame.assets.treeMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.treeTexture2 });
                 KingsGame.assets.treeSprite2 = new THREE.Sprite( KingsGame.assets.treeMaterial );
-                KingsGame.assets.treeSprite2.position.set( -80 - (60 * Math.random()), i*3, 0 );
-            	KingsGame.assets.treeSprite2.scale.set( 15, 20, 1.0 );
+                KingsGame.assets.treeSprite2.position.set( -100 - (60 * Math.random()), i*3, 10 );
+            	KingsGame.assets.treeSprite2.scale.set( 30, 40, 1.0 );
                 KingsGame.assets.treeSprite2.castShadow = true;
             	KingsGame.scene.add( KingsGame.assets.treeSprite2 );
             } else if (rand >= 2 && rand <= 3) {
                 KingsGame.assets.treeMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.treeTexture3 });
                 KingsGame.assets.treeSprite3 = new THREE.Sprite( KingsGame.assets.treeMaterial );
-                KingsGame.assets.treeSprite3.position.set( -80 - (60 * Math.random()), i*3, 0 );
-            	KingsGame.assets.treeSprite3.scale.set( 20, 20, 1.0 );
+                KingsGame.assets.treeSprite3.position.set( -100 - (60 * Math.random()), i*3, 10 );
+            	KingsGame.assets.treeSprite3.scale.set( 40, 40, 1.0 );
                 KingsGame.assets.treeSprite3.castShadow = true;
             	KingsGame.scene.add( KingsGame.assets.treeSprite3 );
             }
 
-            KingsGame.assets.grassMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.grassTexture, useScreenCoordinates: true });
-        	KingsGame.assets.grassSprite = new THREE.Sprite( KingsGame.assets.grassMaterial );
-        	KingsGame.assets.grassSprite.position.set( (160 * Math.random()) - 80, i * 3, -8.5 );
-        	KingsGame.assets.grassSprite.scale.set( 3, 3, 1.0 );
-            KingsGame.assets.grassSprite.castShadow = true;
-        	KingsGame.scene.add( KingsGame.assets.grassSprite );
+            // KingsGame.assets.grassMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.grassTexture, useScreenCoordinates: true });
+        	// KingsGame.assets.grassSprite = new THREE.Sprite( KingsGame.assets.grassMaterial );
+        	// KingsGame.assets.grassSprite.position.set( (160 * Math.random()) - 80, i * 3, -8.5 );
+        	// KingsGame.assets.grassSprite.scale.set( 3, 3, 1.0 );
+            // KingsGame.assets.grassSprite.castShadow = true;
+        	// KingsGame.scene.add( KingsGame.assets.grassSprite );
         }
     };
 
@@ -1398,11 +1406,11 @@
         KingsGame.port.onMessage.addListener(function(msg) {
             console.log(msg);
             if(KingsGame.ready){
-                var gyro = msg.substring(msg.indexOf("#FIL:")+5,msg.length-1);
+                var gyro = msg.substring(msg.indexOf("#GYR:")+5,msg.indexOf("#FIL:"));//msg.length-1);
                 gyro = gyro.split(",");
-                KingsGame.gameobjects.player.rotation.x = gyro[2];
-                KingsGame.gameobjects.player.rotation.y = gyro[1];
-                KingsGame.gameobjects.player.rotation.z = gyro[0];
+                KingsGame.gameobjects.player.rotation.x = -gyro[2];
+                KingsGame.gameobjects.player.rotation.y = -gyro[1] - 0;
+                KingsGame.gameobjects.player.rotation.z = -gyro[0];
             }
         });
 
@@ -1414,6 +1422,9 @@
             } else {
                 event.data.forEach(function(rect) {
                     console.log(rect.x, rect.y, rect.height, rect.width, rect.color);
+                    KingsGame.gameobjects.player.body.position.x = -(rect.x - (200)) / 10;
+                    //KingsGame.gameobjects.player.position.y = gyro[1];
+                    KingsGame.gameobjects.player.body.position.z = -(rect.y - (100)) / 10;
                 });
             }
         });
@@ -1487,12 +1498,12 @@
         var hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.6 );
         hemiLight.color.setHSL( 0.6, 1, 0.6 );
         hemiLight.groundColor.setHSL( 0.095, 1, 0.75 );
-        hemiLight.position.set( 0, 0, 500 );
+        hemiLight.position.set( 500, -500, 500 );
         KingsGame.scene.add( hemiLight );
 
         KingsGame.dirLight = new THREE.DirectionalLight( 0xffffff, 1 );
         KingsGame.dirLight.color.setHSL( 0.1, 1, 0.95 );
-        KingsGame.dirLight.position.set( 0, -10, 10 );
+        KingsGame.dirLight.position.set( 10, -10, 10 );
         KingsGame.dirLight.target.position.set(0,0,0);
         KingsGame.scene.add( KingsGame.dirLight.target );
         KingsGame.dirLight.castShadow = true;
@@ -1521,32 +1532,34 @@
         uniforms.topColor.value.copy( hemiLight.color );
         KingsGame.scene.fog.color.copy( uniforms.bottomColor.value );
 
-        var skyGeo = new THREE.SphereGeometry( 400, 32, 15 );
-        var skyMat = new THREE.ShaderMaterial({
-            vertexShader: vertexShader,
-            fragmentShader: fragmentShader,
-            uniforms: uniforms,
-            side: THREE.BackSide
-        });
-        KingsGame.sky = new THREE.Mesh( skyGeo, skyMat );
-        KingsGame.scene.add( KingsGame.sky );
-
         KingsGame.CAMERA_TYPES = {
             "firstPerson" : 0,
             "thirdPerson" : 1,
             "upView" : 2,
         };
         KingsGame.camera = new THREE.PerspectiveCamera( 75, (window.innerWidth/2)/(window.innerHeight/2), 0.1, 1000 );
-        KingsGame.camera.position.set(0,5,0);
         KingsGame.camera.up = new THREE.Vector3(0,0,1);
-        KingsGame.camera.lookAt(new THREE.Vector3(0,0,0));
-        KingsGame.camera.type = KingsGame.CAMERA_TYPES.thirdPerson;
+        // KingsGame.camera.position.set(
+        //     KingsGame.gameobjects.player.position.x,
+        //     KingsGame.gameobjects.player.position.y-5,
+        //     KingsGame.gameobjects.player.position.z-5
+        // );
+        // KingsGame.camera.lookAt(new THREE.Vector3(
+        //     KingsGame.gameobjects.player.position.x,
+        //     KingsGame.gameobjects.player.position.y,
+        //     KingsGame.gameobjects.player.position.z
+        // ));
+        KingsGame.stereoCamera = new THREE.StereoCamera();
 
         KingsGame.listener = new THREE.AudioListener();
 		KingsGame.camera.add( KingsGame.listener );
 
         //KingsGame.oculusController = new KingsGame.Oculus();
-        KingsGame.controls = new THREE.OrbitControls(KingsGame.camera);
+        KingsGame.controls = new THREE.PointerLockControls(KingsGame.camera);
+        KingsGame.scene.add( KingsGame.controls.getObject() );
+
+        KingsGame.controls.getObject().translateY( 8 );
+		KingsGame.controls.getObject().translateZ( -9 );
 
         var audioLoader = new THREE.AudioLoader(KingsGame.manager);
         var sound = new THREE.Audio( KingsGame.listener );
@@ -1566,8 +1579,62 @@
         KingsGame.renderer.autoClear = false;
         $(this).append( KingsGame.renderer.domElement );
 
-        KingsGame.effect = new THREE.OculusRiftEffect( KingsGame.renderer, { worldScale: 1 } );
+        var genCubeUrls = function( prefix, postfix ) {
+			return [
+				prefix + 'posx' + postfix, prefix + 'negx' + postfix,
+				prefix + 'posy' + postfix, prefix + 'negy' + postfix,
+				prefix + 'posz' + postfix, prefix + 'negz' + postfix
+			];
+		};
+
+        KingsGame.params = {
+			clearPass: true,
+			clearColor: 'white',
+			clearAlpha: 1.0,
+			texturePass: true,
+			texturePassOpacity: 1.0,
+			cubeTexturePass: true,
+			cubeTexturePassOpacity: 1.0,
+			renderPass: true,
+            projection: 'normal',
+			background: false,
+			exposure: 0.8,
+			bloomStrength: 1.5,
+			bloomThreshold: 0.85,
+			bloomRadius: 0.4
+		};
+
+        KingsGame.effect = new THREE.StereoEffect( KingsGame.renderer );
         KingsGame.effect.setSize( window.innerWidth, window.innerHeight );
+
+		KingsGame.composer = new THREE.EffectComposer( KingsGame.renderer );
+		KingsGame.clearPass = new THREE.ClearPass( KingsGame.params.clearColor, KingsGame.params.clearAlpha );
+
+		KingsGame.cubeTexturePassP = new THREE.CubeTexturePass( KingsGame.camera );
+		var ldrUrls = genCubeUrls( "assets/textures/skybox/", ".jpg" );
+		new THREE.CubeTextureLoader().load( ldrUrls, function ( ldrCubeMap ) {
+			KingsGame.cubeTexturePassP.envMap = ldrCubeMap;
+            console.log(KingsGame.cubeTexturePassP.envMap);
+			console.log( "loaded envmap");
+		});
+		KingsGame.renderPass = new THREE.RenderPass( KingsGame.scene, KingsGame.stereoCamera.cameraL );
+		KingsGame.renderPass.clear = false;
+		KingsGame.copyPass = new THREE.ShaderPass( THREE.CopyShader );
+		KingsGame.copyPass.renderToScreen = true;
+        KingsGame.effectFXAA = new THREE.ShaderPass( THREE.FXAAShader );
+        KingsGame.effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight );
+        KingsGame.bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);//1.0, 9, 0.5, 512);
+
+        KingsGame.composer.addPass( KingsGame.clearPass );
+        KingsGame.composer.addPass( KingsGame.cubeTexturePassP );
+        KingsGame.composer.addPass( KingsGame.renderPass );
+        KingsGame.composer.addPass( KingsGame.effectFXAA );
+		KingsGame.composer.addPass( KingsGame.bloomPass );
+		KingsGame.composer.addPass( KingsGame.copyPass );
+
+        KingsGame.bloomPass.threshold = 0.95;
+        KingsGame.bloomPass.strength = 1.2;
+        KingsGame.bloomPass.radius = 0.2;
 
         KingsGame.oculuscontrol = new THREE.OculusControls( KingsGame.camera );
 
