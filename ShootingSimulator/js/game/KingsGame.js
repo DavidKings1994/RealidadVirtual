@@ -327,6 +327,80 @@
         }
     };
 
+    KingsGame.Bullet = function(parameters) {
+        var self = this;
+
+        this.position = parameters.position;
+        this.velocity = parameters.velocity || 1;
+        this.direction = parameters.direction;
+        this.life = 5000;
+
+        this.shape = new CANNON.Sphere(1);
+        this.body = new CANNON.Body({
+            mass: parameters.weight,
+            material: new CANNON.Material(),
+            position: new CANNON.Vec3(
+                parameters.position.x,
+                parameters.position.y,
+                parameters.position.z
+            )
+        });
+        this.body.addShape(this.shape);
+        KingsGame.world.addBody( this.body );
+
+        var modelShape = new THREE.SphereGeometry(1,32,32);
+        this.model = new THREE.Mesh(
+            modelShape,
+            new THREE.MeshPhongMaterial( {
+                color: 0xfff000,
+                shading: THREE.SmoothShading,
+                shininess: 100,
+                specular: 0xffffff,
+                emissive: 0xfffe00,
+                envMap: KingsGame.scene.background
+            } )
+        );
+        this.model.position.copy( this.body.position );
+        this.model.quaternion.copy( this.body.quaternion );
+        this.model.receiveShadow = true;
+        this.model.castShadow = true;
+        KingsGame.scene.add( this.model );
+
+        var audioLoader = new THREE.AudioLoader( KingsGame.manager );
+        this.sound = new THREE.PositionalAudio( KingsGame.listener );
+        audioLoader.load( './assets/sounds/impact.mp3', function( buffer ) {
+            self.sound.setBuffer( buffer );
+            self.sound.setRefDistance( 10 );
+        });
+        this.model.add( this.sound );
+        this.soundAnalyser = new THREE.AudioAnalyser( this.sound, 32 );
+
+        this.body.addEventListener("collide", function() {
+            self.sound.play();
+        });
+    };
+
+    KingsGame.Bullet.prototype = {
+        update: function() {
+            this.life--;
+            if(this.life > 0) {
+                this.body.position.x += this.direction.x * this.velocity;
+                this.body.position.y += this.direction.y * this.velocity;
+                this.body.position.z += this.direction.z * this.velocity;
+                this.position.copy( this.body.position );
+                this.model.position.copy( this.body.position );
+                this.model.quaternion.copy( this.body.quaternion );
+                this.model.material.emissive.b = this.soundAnalyser.getAverageFrequency() / 256;
+                return true;
+            } else {
+                KingsGame.scene.remove( this.model );
+                KingsGame.world.removeBody ( this.body );
+                return false;
+            }
+            return false;
+        }
+    };
+
     KingsGame.Player = function(parameters) {
         KingsGame.GameObject.apply(this, arguments);
 
@@ -343,6 +417,8 @@
             "Glock" : 2,
         };
         this.gunType = this.GUNS.M1911;
+
+        this.bulletsShooted = [];
     };
 
     KingsGame.Player.prototype = Object.create(KingsGame.GameObject.prototype);
@@ -351,20 +427,63 @@
 
     KingsGame.Player.prototype.update = function() {
         KingsGame.GameObject.prototype.update.call(this);
+
+        for (var i = 0; i < this.bulletsShooted.length; i++) {
+            if(!this.bulletsShooted[i].update()) {
+                this.bulletsShooted.splice(i, 1);
+            }
+        }
+
         switch (this.state) {
-        case this.STATES.iddle:
-            break;
-        case this.STATES.reloading:
-            break;
-        case this.STATES.shoting:
-            break;
+            case this.STATES.iddle: {
+                break;
+            }
+            case this.STATES.reloading: {
+                break;
+            }
+            case this.STATES.shoting: {
+                if (this.sound.isPlaying) {
+                    this.sound.stop();
+                    this.sound.currentTime = 0;
+                }
+                this.sound.play();
+                this.state = this.STATES.iddle;
+                break;
+            }
         }
     };
 
+    KingsGame.Player.prototype.shoot = function() {
+        this.state = this.STATES.shoting;
+        var bullet = new KingsGame.Bullet({
+            position: KingsGame.gameobjects.player.body.position.clone(),
+            direction: KingsGame.gameobjects.player.getDirection(),
+            velocity: 20
+        });
+        this.bulletsShooted.push(bullet);
+    };
+
     KingsGame.Player.prototype.getDirection = function() {
-        var temp = new THREE.Vector3();
-        temp.copy(this.direction);
-        temp.applyQuaternion(this.body.quaternion);
+        var temp = new THREE.Vector3(0,0,1);
+        var quaternion = new THREE.Quaternion();
+        quaternion.setFromAxisAngle( new THREE.Vector3( 1, 0, 0 ), KingsGame.gameobjects.player.rotation.x * (Math.PI / 180));
+        quaternion.setFromAxisAngle( new THREE.Vector3( 0, 1, 0 ), KingsGame.gameobjects.player.rotation.y * (Math.PI / 180));
+        quaternion.setFromAxisAngle( new THREE.Vector3( 0, 0, 1 ), KingsGame.gameobjects.player.rotation.z * (Math.PI / 180));
+
+        var m = new THREE.Matrix4();
+
+        var m1 = new THREE.Matrix4();
+        var m2 = new THREE.Matrix4();
+        var m3 = new THREE.Matrix4();
+
+        m1.makeRotationX( KingsGame.gameobjects.player.rotation.x * (Math.PI / 180) );
+        m2.makeRotationY( KingsGame.gameobjects.player.rotation.y * (Math.PI / 180) );
+        m3.makeRotationZ( KingsGame.gameobjects.player.rotation.z * (Math.PI / 180) );
+
+        m.multiplyMatrices( m1, m3 );
+        m.multiply( m2 );
+
+        temp.applyMatrix4(m);
         return temp;
     };
 
@@ -1110,8 +1229,7 @@
         case 39: // right
 
             break;
-        case 66:
-
+        case 32: //space
             break;
         }
     };
@@ -1163,6 +1281,9 @@
             KingsGame.gameobjects.player.state = KingsGame.gameobjects.player.STATES.iddle;
             //KingsGame.gameobjects.player.body.angularVelocity.set(0,0,0);
             break;
+        case 32: //space
+            KingsGame.gameobjects.player.shoot();
+            break;
         }
     };
 
@@ -1210,25 +1331,26 @@
                 fileName: 'Colt',
                 useMTL: true,
                 position: new THREE.Vector3(0,10,0),
-                rotation: new THREE.Vector3(90,-90,0),
+                rotation: new THREE.Vector3(90,-180,0),
                 scale: new THREE.Vector3(0.3,0.3,0.3),
-                weight: 0
+                weight: 0,
+                soundPath: './assets/sounds/9mmShoot.mp3'
             }),
             "crate" : new KingsGame.GameObject({
                 modelPath: './assets/models/crate/',
                 fileName: 'crate',
                 useMTL: true,
-                position: new THREE.Vector3(40,60,2),
-                scale: new THREE.Vector3(2,2,2),
+                position: new THREE.Vector3(0,-60,2),
+                scale: new THREE.Vector3(4,4,4),
                 weight: 4,
             }),
             "crate2" : new KingsGame.GameObject({
                 modelPath: './assets/models/crate/',
                 fileName: 'crate',
                 useMTL: true,
-                position: new THREE.Vector3(40,60,5),
+                position: new THREE.Vector3(0,-60,6),
                 rotation: new THREE.Vector3(0,0,45),
-                scale: new THREE.Vector3(2,2,2),
+                scale: new THREE.Vector3(4,4,4),
                 weight: 4,
             }),
             // "cabine" : new KingsGame.GameObject({
@@ -1264,10 +1386,10 @@
         tmap.repeat.set( 1, 1 );
         var smap1 = new THREE.TextureLoader(KingsGame.manager).load( "./assets/textures/151.jpg" );
         smap1.wrapS = smap1.wrapT = THREE.RepeatWrapping;
-        smap1.repeat.set( 400, 400 );
+        smap1.repeat.set( 800, 800 );
         var smap2 = new THREE.TextureLoader(KingsGame.manager).load( "./assets/textures/groundgrass2.png" );
         smap2.wrapS = smap2.wrapT = THREE.RepeatWrapping;
-        smap2.repeat.set( 200, 200 );
+        smap2.repeat.set( 400, 400 );
         // KingsGame.assets.groundTexture = new THREE.MeshPhongMaterial({
         //     shininess  :  0,
         //     bumpMap    :  bmap,
@@ -1307,6 +1429,22 @@
             KingsGame.assets.targetSprite.scale.set( 10, 10, 1.0 );
             KingsGame.assets.targetSprite.castShadow = true;
             KingsGame.scene.add( KingsGame.assets.targetSprite );
+        }
+
+        for (var i = 0; i < 1000; i++) {
+            KingsGame.assets.grassMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.grassTexture, useScreenCoordinates: true });
+            KingsGame.assets.grassSprite = new THREE.Sprite( KingsGame.assets.grassMaterial );
+            KingsGame.assets.grassSprite.position.set( -90 - (50 * Math.random()), i, -5 );
+            KingsGame.assets.grassSprite.scale.set( 6, 6, 1.0 );
+            KingsGame.assets.grassSprite.castShadow = true;
+            KingsGame.scene.add( KingsGame.assets.grassSprite );
+
+            KingsGame.assets.grassMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.grassTexture, useScreenCoordinates: true });
+            KingsGame.assets.grassSprite = new THREE.Sprite( KingsGame.assets.grassMaterial );
+            KingsGame.assets.grassSprite.position.set( 90 + (50 * Math.random()), i, -5 );
+            KingsGame.assets.grassSprite.scale.set( 6, 6, 1.0 );
+            KingsGame.assets.grassSprite.castShadow = true;
+            KingsGame.scene.add( KingsGame.assets.grassSprite );
         }
 
         for (var i = 0; i < 100; i++) {
@@ -1357,13 +1495,6 @@
                 KingsGame.assets.treeSprite3.castShadow = true;
             	KingsGame.scene.add( KingsGame.assets.treeSprite3 );
             }
-
-            // KingsGame.assets.grassMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.grassTexture, useScreenCoordinates: true });
-        	// KingsGame.assets.grassSprite = new THREE.Sprite( KingsGame.assets.grassMaterial );
-        	// KingsGame.assets.grassSprite.position.set( (160 * Math.random()) - 80, i * 3, -8.5 );
-        	// KingsGame.assets.grassSprite.scale.set( 3, 3, 1.0 );
-            // KingsGame.assets.grassSprite.castShadow = true;
-        	// KingsGame.scene.add( KingsGame.assets.grassSprite );
         }
     };
 
@@ -1401,16 +1532,37 @@
         KingsGame.oculusShader = parameters.oculusShader;
         KingsGame.colorTracking = parameters.colorTracking;
 
+        KingsGame.haptic = {
+            pastRotation: new THREE.Vector3(),
+            actualRotation: new THREE.Vector3(),
+            started: false
+        };
         KingsGame.serialExtensionId = "mgfmopegkdlopmkaodehjmdmpbjphlnc";
         KingsGame.port = chrome.runtime.connect(KingsGame.serialExtensionId);
         KingsGame.port.onMessage.addListener(function(msg) {
-            console.log(msg);
             if(KingsGame.ready){
                 var gyro = msg.substring(msg.indexOf("#GYR:")+5,msg.indexOf("#FIL:"));//msg.length-1);
                 gyro = gyro.split(",");
-                KingsGame.gameobjects.player.rotation.x = -gyro[2];
-                KingsGame.gameobjects.player.rotation.y = -gyro[1] - 0;
-                KingsGame.gameobjects.player.rotation.z = -gyro[0];
+                KingsGame.haptic.actualRotation.set(gyro[0], gyro[1], gyro[2]);
+                if (!KingsGame.haptic.started) {
+                    KingsGame.haptic.pastRotation.set(gyro[0], gyro[1], gyro[2]);
+                    KingsGame.haptic.started = true;
+                }
+
+                KingsGame.gameobjects.player.rotation.x -= KingsGame.haptic.actualRotation.z - KingsGame.haptic.pastRotation.z;
+                KingsGame.gameobjects.player.rotation.y += KingsGame.haptic.actualRotation.y - KingsGame.haptic.pastRotation.y;
+                KingsGame.gameobjects.player.rotation.z -= KingsGame.haptic.actualRotation.x - KingsGame.haptic.pastRotation.x;
+
+                KingsGame.haptic.pastRotation.set(
+                    KingsGame.haptic.actualRotation.x,
+                    KingsGame.haptic.actualRotation.y,
+                    KingsGame.haptic.actualRotation.z
+                );
+
+                var shoting = msg.substring(msg.indexOf("#TRI:")+5, msg.length-1);
+                if (parseInt(shoting) != 0) {
+                    KingsGame.gameobjects.player.shoot();
+                }
             }
         });
 
@@ -1532,11 +1684,6 @@
         uniforms.topColor.value.copy( hemiLight.color );
         KingsGame.scene.fog.color.copy( uniforms.bottomColor.value );
 
-        KingsGame.CAMERA_TYPES = {
-            "firstPerson" : 0,
-            "thirdPerson" : 1,
-            "upView" : 2,
-        };
         KingsGame.camera = new THREE.PerspectiveCamera( 75, (window.innerWidth/2)/(window.innerHeight/2), 0.1, 1000 );
         KingsGame.camera.up = new THREE.Vector3(0,0,1);
         // KingsGame.camera.position.set(
@@ -1614,6 +1761,7 @@
 		var ldrUrls = genCubeUrls( "assets/textures/skybox/", ".jpg" );
 		new THREE.CubeTextureLoader().load( ldrUrls, function ( ldrCubeMap ) {
 			KingsGame.cubeTexturePassP.envMap = ldrCubeMap;
+            KingsGame.scene.background = ldrCubeMap;
             console.log(KingsGame.cubeTexturePassP.envMap);
 			console.log( "loaded envmap");
 		});

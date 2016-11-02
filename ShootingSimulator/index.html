@@ -74,7 +74,7 @@
     	vec4 rocky = texture2D( textureMap, vUV).r * texture2D( rockyTexture, vUV * 50.0);
         vec4 grass = texture2D( textureMap, vUV).g * texture2D( grassTexture, vUV * 50.0);
     	vec4 snowy = texture2D( textureMap, vUV).b * texture2D( snowyTexture, vUV * 50.0);
-    	gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0) + rocky + snowy + grass; 
+    	gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0) + rocky + snowy + grass;
     }
     </script>
 
