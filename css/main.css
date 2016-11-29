@@ -1,0 +1,75 @@
+@font-face {
+    font-family: OpenSans-Bold;
+    src: url(fonts/open-sans/OpenSans-Bold.ttf);
+}
+
+@font-face {
+    font-family: OpenSans-Semibold;
+    src: url(fonts/open-sans/OpenSans-Semibold.ttf);
+}
+
+@font-face {
+    font-family: OpenSans-Light;
+    src: url(fonts/open-sans/OpenSans-Light.ttf);
+}
+
+body {
+    padding: 0;
+    margin: 0;
+    border: 0;
+    overflow: hidden;
+    line-height: 1.8 !important;
+}
+
+.contenedorGeneral {
+    width: 100vw;
+    height: 100vh;
+    background: url(../img/background.jpg);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    overflow: hidden;
+}
+
+.PantallaUsuario {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+    width: 440px;
+    height: 230px;
+    border-radius: 5px;
+    background: rgb(63,60,58);
+    font-family: opensans-semibold;
+    color: rgb(200,200,200);
+}
+
+.PantallaUsuario table {
+    margin: 30px auto;
+    width: 70%;
+}
+
+.PantallaUsuario table td:last-child{
+    width: 200px;
+    height: 40px;
+}
+
+.PantallaUsuario table input, .PantallaUsuario table select {
+    padding: 3px 5px;
+    margin: 0;
+    border-radius: 5px;
+    color: rgb(50,50,50);
+}
+
+.PantallaUsuario table input{
+    width: 183px;
+}
+
+.PantallaUsuario #botonComenzar {
+    display: block;
+    width: 50%;
+    margin: 0 auto;
+    padding: 10px 0;
+    border-radius: 5px;
+    color: rgb(50,50,50);
+    font-family: opensans-bold;
+}

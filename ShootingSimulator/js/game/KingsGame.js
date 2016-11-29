@@ -337,7 +337,7 @@
 
         this.shape = new CANNON.Sphere(1);
         this.body = new CANNON.Body({
-            mass: parameters.weight,
+            mass: 0,
             material: new CANNON.Material(),
             position: new CANNON.Vec3(
                 parameters.position.x,
@@ -349,29 +349,26 @@
         KingsGame.world.addBody( this.body );
 
         var modelShape = new THREE.SphereGeometry(1,32,32);
-        this.model = new THREE.Mesh(
-            modelShape,
-            new THREE.MeshPhongMaterial( {
-                color: 0xfff000,
-                shading: THREE.SmoothShading,
-                shininess: 100,
-                specular: 0xffffff,
-                emissive: 0xfffe00,
-                envMap: KingsGame.scene.background
-            } )
-        );
+        this.model = KingsGame.gameobjects.bala.model.clone();
+        this.model.material = new THREE.MeshPhongMaterial( {
+            color: 0xfff000,
+            shading: THREE.SmoothShading,
+            shininess: 100,
+            specular: 0xffffff,
+            emissive: 0xfffe00,
+            envMap: KingsGame.scene.background
+        } );
         this.model.position.copy( this.body.position );
         this.model.quaternion.copy( this.body.quaternion );
         this.model.receiveShadow = true;
         this.model.castShadow = true;
         KingsGame.scene.add( this.model );
 
-        var audioLoader = new THREE.AudioLoader( KingsGame.manager );
         this.sound = new THREE.PositionalAudio( KingsGame.listener );
-        audioLoader.load( './assets/sounds/impact.mp3', function( buffer ) {
-            self.sound.setBuffer( buffer );
-            self.sound.setRefDistance( 10 );
-        });
+        this.sound.setBuffer( KingsGame.assets.sounds.impactSound );
+        this.sound.setRefDistance( 10 );
+        this.sound.setVolume(100.0);
+
         this.model.add( this.sound );
         this.soundAnalyser = new THREE.AudioAnalyser( this.sound, 32 );
 
@@ -419,6 +416,7 @@
         this.gunType = this.GUNS.M1911;
 
         this.bulletsShooted = [];
+        this.remainingBullets = 8;
     };
 
     KingsGame.Player.prototype = Object.create(KingsGame.GameObject.prototype);
@@ -439,6 +437,12 @@
                 break;
             }
             case this.STATES.reloading: {
+                if (KingsGame.gameobjects.playerBody.sound.isPlaying) {
+                    KingsGame.gameobjects.playerBody.sound.stop();
+                    KingsGame.gameobjects.playerBody.sound.currentTime = 0;
+                }
+                KingsGame.gameobjects.playerBody.sound.play();
+                this.state = this.STATES.iddle;
                 break;
             }
             case this.STATES.shoting: {
@@ -454,21 +458,25 @@
     };
 
     KingsGame.Player.prototype.shoot = function() {
-        this.state = this.STATES.shoting;
-        var bullet = new KingsGame.Bullet({
-            position: KingsGame.gameobjects.player.body.position.clone(),
-            direction: KingsGame.gameobjects.player.getDirection(),
-            velocity: 20
-        });
-        this.bulletsShooted.push(bullet);
+        if (this.remainingBullets > 0) {
+            this.state = this.STATES.shoting;
+            var bullet = new KingsGame.Bullet({
+                position: KingsGame.gameobjects.player.body.position.clone(),
+                direction: KingsGame.gameobjects.player.getDirection(),
+                velocity: 10
+            });
+            this.bulletsShooted.push(bullet);
+            this.remainingBullets--;
+        }
+    };
+
+    KingsGame.Player.prototype.reload = function() {
+        this.state = this.STATES.reloading;
+        this.remainingBullets = 8;
     };
 
     KingsGame.Player.prototype.getDirection = function() {
         var temp = new THREE.Vector3(0,0,1);
-        var quaternion = new THREE.Quaternion();
-        quaternion.setFromAxisAngle( new THREE.Vector3( 1, 0, 0 ), KingsGame.gameobjects.player.rotation.x * (Math.PI / 180));
-        quaternion.setFromAxisAngle( new THREE.Vector3( 0, 1, 0 ), KingsGame.gameobjects.player.rotation.y * (Math.PI / 180));
-        quaternion.setFromAxisAngle( new THREE.Vector3( 0, 0, 1 ), KingsGame.gameobjects.player.rotation.z * (Math.PI / 180));
 
         var m = new THREE.Matrix4();
 
@@ -638,413 +646,9 @@
         },
     };
 
-    KingsGame.RoadSection = function(parameters) {
-        this.id = parameters.id;
-        this.position = parameters.position || new CANNON.Vec3();
-        this.size = parameters.size || new CANNON.Vec3(25,50,0.05);
-        this.hazard = parameters.hazard || KingsGame.HAZARDS.plain;
-        this.dificulty = parameters.dificulty || KingsGame.DIFICULTY.easy;
-
-        if(this.hazard == KingsGame.HAZARDS.pit) {
-            var pos = this.position.clone();
-            var length = (this.size.y/3)*2;
-            this.groundBody = new CANNON.Body({
-                mass: 0,
-                position: pos.vadd(0,length,0),
-                material: KingsGame.groundMaterial
-            });
-            var groundShape = new CANNON.Box( new CANNON.Vec3(
-                this.size.x,
-                length,
-                this.size.z
-            ) );
-            this.groundBody.addShape( groundShape );
-            KingsGame.world.addBody( this.groundBody );
-
-            var geometry = new THREE.PlaneGeometry( this.size.x * 2, length * 2 );
-            this.mesh = new THREE.Mesh( geometry, KingsGame.assets.groundTexture );
-            this.mesh.position.copy( this.groundBody.position );
-            this.mesh.quaternion.copy( this.groundBody.quaternion );
-            this.mesh.receiveShadow = true;
-            KingsGame.scene.add( this.mesh );
-        } else {
-            this.groundBody = new CANNON.Body({
-                mass: 0,
-                position: this.position,
-                material: KingsGame.groundMaterial
-            });
-            var groundShape = new CANNON.Box( this.size );
-            this.groundBody.addShape( groundShape );
-            KingsGame.world.addBody( this.groundBody );
-
-            var geometry = new THREE.PlaneGeometry( this.size.x * 2, this.size.y * 2 );
-            this.mesh = new THREE.Mesh( geometry, KingsGame.assets.groundTexture );
-            this.mesh.position.copy( this.groundBody.position );
-            this.mesh.quaternion.copy( this.groundBody.quaternion );
-            this.mesh.receiveShadow = true;
-            KingsGame.scene.add( this.mesh );
-        }
-
-        this.background = new THREE.Mesh( new THREE.PlaneGeometry( 400, this.size.y * 2 ), KingsGame.assets.lavaMaterial );
-        this.background.position.set(
-            this.position.x,
-            this.position.y,
-            this.position.z - 5
-        );
-        this.background.receiveShadow = true;
-        KingsGame.scene.add( this.background );
-
-        this.initHazards();
-    };
-
-    KingsGame.RoadSection.prototype = {
-        constructor: KingsGame.RoadSection,
-
-        placeBumper: function(pos) {
-            this.gameobjects.push(new KingsGame.GameObject({
-                modelPath: './assets/models/crate/',
-                fileName: 'crate',
-                useMTL: true,
-                position: pos.add(new THREE.Vector3(0,0,2)),
-                scale: new THREE.Vector3(3,3,3),
-                weight: 0,
-                colideEvent: KingsGame.prototype.bumper
-            }));
-        },
-
-        placeRamp: function(ancho) {
-            var posX = Math.floor(Math.random() * 4) + 0;
-            this.gameobjects.push(new KingsGame.GameObject({
-                position: this.position.vadd(new CANNON.Vec3(((posX - 2) * 6),this.size.y,0)),
-                scale: new THREE.Vector3(ancho,22,0.1),
-                rotation: new THREE.Vector3(-15,0,0),
-                weight: 0,
-                name: "ramp"
-            }));
-            this.gameobjects.push(new KingsGame.GameObject({
-                position: this.position.vadd(new CANNON.Vec3(((posX - 2) * 6),this.size.y + 5,0.01)),
-                scale: new THREE.Vector3(ancho,10,0.1),
-                weight: 0,
-                name: "ramp",
-                material: KingsGame.assets.acceleratorTexture,
-                colideEvent: function(e) {
-                    if(e.body.name == "player" || e.body.name == "wheel") {
-                        var dir = KingsGame.gameobjects.player.getDirection();
-                        var vel = new CANNON.Vec3(
-                            dir.x,
-                            dir.y,
-                            dir.z
-                        );
-                        vel.normalize();
-                        vel = vel.scale(50);
-                        KingsGame.gameobjects.player.body.angularVelocity.set(0,0,0);
-                        KingsGame.gameobjects.player.body.inertia.set(0,0,0);
-                        KingsGame.gameobjects.player.body.velocity.copy(vel);
-                    }
-                }
-            }));
-        },
-
-        placeMeteorite: function() {
-            var pX = Math.random() * (this.size.x*2) - this.size.x;
-            var pY = Math.random() * (this.size.y*2) - this.size.y;
-            var pZ = 20;
-            var position = new THREE.Vector3(this.position.x + pX, this.position.y + pY, this.position.z + pZ);
-            var father = this;
-            var self = new KingsGame.GameObject({
-                position: position,
-                scale: new THREE.Vector3(1,1,1),
-                weight: 20,
-                shape: "sphere",
-                material: KingsGame.assets.lavaMaterial,
-                soundPath: './assets/sounds/explosion.mp3',
-                playSound: false,
-                material: new THREE.MeshPhongMaterial( {
-                    color: 0xffaa00,
-                    shading: THREE.FlatShading,
-                    shininess: 10
-                } )
-            });
-            self.bindCollideEvent(function(e) {
-                father.particleSystems.push( new KingsGame.ParticleSystem({
-                    sistemType: "fountain",
-                    fountainHeight: 1,
-                    position: self.position,
-                    gravity: new THREE.Vector3(0,0,-0.08),
-                    particleCount: 300,
-                    radius: 1,
-                    keepAlive: false,
-                    size: 3
-                }));
-                var distance = KingsGame.gameobjects.player.position.distanceTo( e.contact.bi.position );
-                if(distance < 10) {
-                    var dx = e.contact.bi.position.x - KingsGame.gameobjects.player.position.x;
-                    var dy = e.contact.bi.position.y - KingsGame.gameobjects.player.position.y;
-                    var dz = e.contact.bi.position.z - KingsGame.gameobjects.player.position.z;
-
-                    var worldPoint = new CANNON.Vec3(0,0,0);
-                    var impulse = new CANNON.Vec3(dx,dy,dz);
-                    impulse.normalize();
-                    impulse = impulse.scale(40/distance);
-                    KingsGame.gameobjects.player.body.applyImpulse(impulse,worldPoint);
-                }
-                self.sound.play();
-                self.destroy();
-            });
-            this.gameobjects.push( self );
-        },
-
-        initHazards: function() {
-            this.gameobjects = [];
-            this.particleSystems = [];
-            switch (this.hazard) {
-                case KingsGame.HAZARDS.bumpers: {
-                    switch (this.dificulty) {
-                        case KingsGame.DIFICULTY.easy: {
-                            var rand = Math.floor(Math.random() * 4) + 0;
-                            this.placeBumper(new THREE.Vector3(
-                                this.position.x + ((rand - 2) * 6),
-                                this.position.y,
-                                this.position.z
-                            ));
-                            break;
-                        }
-                        case KingsGame.DIFICULTY.medium: {
-                            var randx = Math.floor(Math.random() * 4) + 0;
-                            var randy = Math.floor(Math.random() * 4) + 0;
-                            this.placeBumper(new THREE.Vector3(
-                                this.position.x + ((randx - 2) * 6),
-                                this.position.y + ((randy - 2) * 12),
-                                this.position.z
-                            ));
-                            var done = false
-                            while(!done) {
-                                var randx2 = Math.floor(Math.random() * 4) + 0;
-                                if(randx2 != randx) {
-                                    done = true;
-                                }
-                            }
-                            var randy2 = Math.floor(Math.random() * 4) + 0;
-                            this.placeBumper(new THREE.Vector3(
-                                this.position.x + ((randx2 - 2) * 6),
-                                this.position.y + ((randy2 - 2) * 12),
-                                this.position.z
-                            ));
-                            break;
-                        }
-                        case KingsGame.DIFICULTY.hard: {
-                            break;
-                        }
-                    }
-                    break;
-                }
-                case KingsGame.HAZARDS.accelerator: {
-                    switch (this.dificulty) {
-                        case KingsGame.DIFICULTY.easy: {
-                            break;
-                        }
-                        case KingsGame.DIFICULTY.medium: {
-                            break;
-                        }
-                        case KingsGame.DIFICULTY.hard: {
-                            break;
-                        }
-                    }
-                    break;
-                }
-                case KingsGame.HAZARDS.pit: {
-                    switch (this.dificulty) {
-                        case KingsGame.DIFICULTY.easy: {
-                            this.placeRamp(25);
-                            break;
-                        }
-                        case KingsGame.DIFICULTY.medium: {
-                            this.placeRamp(16);
-                            break;
-                        }
-                        case KingsGame.DIFICULTY.hard: {
-                            this.placeRamp(8);
-                            break;
-                        }
-                    }
-                    break;
-                }
-                case KingsGame.HAZARDS.meteorites: {
-                    switch (this.dificulty) {
-                        case KingsGame.DIFICULTY.easy: {
-                            break;
-                        }
-                        case KingsGame.DIFICULTY.medium: {
-                            break;
-                        }
-                        case KingsGame.DIFICULTY.hard: {
-                            break;
-                        }
-                    }
-                    break;
-                }
-            }
-        },
-
-        update: function() {
-            switch (this.hazard) {
-                case KingsGame.HAZARDS.bumpers: {
-                    if(this.dificulty == KingsGame.DIFICULTY.hard) {
-
-                    }
-                    break;
-                }
-                case KingsGame.HAZARDS.meteorites: {
-                    var delta = KingsGame.clock.getDelta();
-                    if(this.pastTime == null) {
-                        this.pastTime = 0;
-                        this.actualTime = delta;
-                    }
-                    switch (this.dificulty) {
-                        case KingsGame.DIFICULTY.easy: {
-                            if(this.actualTime > this.pastTime + 1) {
-                                for (var i = 0; i < 1; i++) {
-                                    this.placeMeteorite();
-                                }
-                                this.pastTime = this.actualTime;
-                            }
-                            break;
-                        }
-                        case KingsGame.DIFICULTY.medium: {
-                            if(this.actualTime > this.pastTime + 0.5) {
-                                for (var i = 0; i < 2; i++) {
-                                    this.placeMeteorite();
-                                }
-                                this.pastTime = this.actualTime;
-                            }
-                            break;
-                        }
-                        case KingsGame.DIFICULTY.hard: {
-                            if(this.actualTime > this.pastTime + 0.2) {
-                                for (var i = 0; i < 2; i++) {
-                                    this.placeMeteorite();
-                                }
-                                this.pastTime = this.actualTime;
-                            }
-                            break;
-                        }
-                    }
-                }
-                this.actualTime += delta;
-            }
-            var elements = _.toArray(this.gameobjects);
-            for (var i = 0; i < elements.length; i++) {
-                if(elements[i].name != "ramp") {
-                    elements[i].update();
-                }
-            }
-            var elements = _.toArray(this.particleSystems);
-            for (var i = 0; i < elements.length; i++) {
-                if(elements[i].name != "ramp") {
-                    elements[i].update();
-                }
-            }
-        },
-
-        destroy: function() {
-            KingsGame.scene.remove( this.background );
-            KingsGame.scene.remove( this.mesh );
-            KingsGame.world.removeBody ( this.groundBody );
-            for (var i = 0; i < this.gameobjects.length; i++) {
-                this.gameobjects[i].destroy();
-            }
-            for (var i = 0; i < this.particleSystems.length; i++) {
-                this.particleSystems[i].destroy();
-            }
-        },
-    };
-
-    KingsGame.Road = function() {
-        this.road = [];
-        for (var i = 0; i < 4; i++) {
-            if(i>1) {
-                this.road.push(new KingsGame.RoadSection({
-                    id: i,
-                    position: new CANNON.Vec3( 0, i * -100, -10 ),
-                    hazard: KingsGame.HAZARDS.meteorites,
-                    dificulty: KingsGame.DIFICULTY.easy
-                }));
-            } else {
-                this.road.push(new KingsGame.RoadSection({
-                    id: i,
-                    position: new CANNON.Vec3( 0, i * -100, -10 )
-                }));
-            }
-        }
-    };
-
-    KingsGame.Road.prototype = {
-        constructor: KingsGame.Road,
-
-        update: function() {
-            var index = this.locatePlayer();
-            if(index > this.road.length - 3) {
-                var _hazard;
-                if( this.road[3].hazard != KingsGame.HAZARDS.pit &&
-                    this.road[2].hazard != KingsGame.HAZARDS.pit &&
-                    this.road[1].hazard != KingsGame.HAZARDS.pit) {
-                    _hazard = KingsGame.HAZARDS.pit;
-                } else if (this.road[3].hazard == KingsGame.HAZARDS.pit) {
-                    _hazard = KingsGame.HAZARDS.plain;
-                } else {
-                    var rand = Math.floor(Math.random() * 10) + 0;
-                    if(rand < 6) {
-                        _hazard = KingsGame.HAZARDS.meteorites;
-                    } else {
-                        _hazard = KingsGame.HAZARDS.bumpers;
-                    }
-                }
-                this.road.push(new KingsGame.RoadSection({
-                    id: this.road[3].id + 1,
-                    position: new CANNON.Vec3( 0, (this.road[3].id + 1) * -100, -10 ),
-                    hazard: _hazard,
-                    dificulty: Math.floor(Math.random() * 2) + 0
-                }));
-                this.road[0].destroy();
-                this.road.splice(0,1);
-            }
-            for (var i = 0; i < this.road.length; i++) {
-                this.road[i].update();
-            }
-        },
-
-        destroy: function() {
-            for (var i = 0; i < this.road.length; i++) {
-                this.road[i].destroy();
-            }
-        },
-
-        locatePlayer: function() {
-            for (var i = 0; i < this.road.length; i++) {
-                if(
-                    (
-                        KingsGame.gameobjects.player.position.x > (this.road[i].position.x - this.road[i].size.x) &&
-                        KingsGame.gameobjects.player.position.x < (this.road[i].position.x + this.road[i].size.x)
-                    ) && (
-                        KingsGame.gameobjects.player.position.y > (this.road[i].position.y - this.road[i].size.y) &&
-                        KingsGame.gameobjects.player.position.y < (this.road[i].position.y + this.road[i].size.y)
-                    )
-                ) {
-                    return i;
-                }
-            }
-        },
-
-        insideRoad(position) {
-            if((position.x > -25 && position.x < 25) && (position.z > -15)) {
-                return true;
-            }
-            return false;
-        },
-    };
-
     KingsGame.prototype.updatePhysics = function () {
-        KingsGame.world.step( KingsGame.timeStep, KingsGame.elapsedTime, 10 );
+        var timeStep = 1.0 / 60.0;
+        KingsGame.world.step( timeStep );//KingsGame.timeStep, KingsGame.elapsedTime, 10 );
     };
 
     KingsGame.prototype.update = function () {
@@ -1135,14 +739,16 @@
             var pointerlockchange = function ( event ) {
                 if ( document.pointerLockElement === element || document.mozPointerLockElement === element || document.webkitPointerLockElement === element ) {
                     blocker.style.display = 'none';
+                    Backbone.trigger('HideScore');
                     KingsGame.paused = false;
 					KingsGame.controls.enabled = true;
                 } else {
 					KingsGame.controls.enabled = false;
-                    blocker.style.display = '-webkit-box';
-                    blocker.style.display = '-moz-box';
-                    blocker.style.display = 'box';
-                    instructions.style.display = '';
+                    // blocker.style.display = '-webkit-box';
+                    // blocker.style.display = '-moz-box';
+                    // blocker.style.display = 'box';
+                    // instructions.style.display = '';
+                    Backbone.trigger('ShowScore');
                     KingsGame.paused = true;
                 }
             };
@@ -1158,6 +764,7 @@
             document.addEventListener( 'webkitpointerlockerror', pointerlockerror, false );
             instructions.addEventListener( 'click', function ( event ) {
                 instructions.style.display = 'none';
+                Backbone.trigger('HideScore');
                 if( KingsGame.pointerLocked ) {
                     // Ask the browser to lock the pointer
                     element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
@@ -1178,6 +785,7 @@
                     }
                 } else {
                     blocker.style.display = 'none';
+                    Backbone.trigger('HideScore');
                     KingsGame.paused = false;
                 }
             }, false );
@@ -1248,7 +856,6 @@
             break;
 
         case 82: //r
-            KingsGame.prototype.restart();
             break;
 
         case 79: //o
@@ -1277,12 +884,15 @@
         case 39: // right
         case 37: // left
         case 68: // d
-        case 65: // a
-            KingsGame.gameobjects.player.state = KingsGame.gameobjects.player.STATES.iddle;
+        case 82: //r
+            KingsGame.gameobjects.player.reload();
             //KingsGame.gameobjects.player.body.angularVelocity.set(0,0,0);
             break;
         case 32: //space
             KingsGame.gameobjects.player.shoot();
+            break;
+        case 17: //ctrl
+            Backbone.trigger('ShowScore');
             break;
         }
     };
@@ -1291,10 +901,13 @@
         KingsGame.manager = new THREE.LoadingManager();
         KingsGame.manager.onProgress = function(item, loaded, total) {
             var percentComplete = loaded / total * 100;
-            percentComplete = Math.round(percentComplete, 2)
+            percentComplete = Math.round(percentComplete, 2);
             Backbone.trigger('loading', percentComplete);
         };
         KingsGame.manager.onLoad = function() {
+            KingsGame.prototype.initGround();
+            KingsGame.prototype.initGameObjects();
+            KingsGame.prototype.render();
             KingsGame.ready = true;
         };
         KingsGame.manager.onError = function() {
@@ -1305,8 +918,6 @@
     KingsGame.prototype.initGround = function() {
         THREE.crossOrigin = "";
         KingsGame.groundMaterial = new CANNON.Material("groundMaterial");
-
-        //KingsGame.road = new KingsGame.Road();
 
         var groundBody = new CANNON.Body({
             mass: 0,
@@ -1336,32 +947,49 @@
                 weight: 0,
                 soundPath: './assets/sounds/9mmShoot.mp3'
             }),
+            "bala" : new KingsGame.GameObject({
+                modelPath: './assets/models/ManoColt/',
+                fileName: 'Bala',
+                useMTL: true,
+                position: new THREE.Vector3(0,10,0),
+                rotation: new THREE.Vector3(90,-180,0),
+                scale: new THREE.Vector3(0.3,0.3,0.3),
+                weight: 0,
+            }),
+            "playerBody" : new KingsGame.GameObject({
+                modelPath: './assets/models/crate/',
+                fileName: 'crate',
+                useMTL: true,
+                position: new THREE.Vector3(0,0,0),
+                weight: 0,
+                soundPath: './assets/sounds/reload.mp3'
+            }),
             "crate" : new KingsGame.GameObject({
                 modelPath: './assets/models/crate/',
                 fileName: 'crate',
                 useMTL: true,
-                position: new THREE.Vector3(0,-60,2),
+                position: new THREE.Vector3(0,80,2),
                 scale: new THREE.Vector3(4,4,4),
-                weight: 4,
+                weight: 10,
             }),
             "crate2" : new KingsGame.GameObject({
                 modelPath: './assets/models/crate/',
                 fileName: 'crate',
                 useMTL: true,
-                position: new THREE.Vector3(0,-60,6),
-                rotation: new THREE.Vector3(0,0,45),
+                position: new THREE.Vector3(0,80,6),
+                rotation: new THREE.Vector3(0,0,4),
                 scale: new THREE.Vector3(4,4,4),
-                weight: 4,
+                weight: 100,
             }),
-            // "cabine" : new KingsGame.GameObject({
-            //     modelPath: './assets/models/Cabana/',
-            //     fileName: 'CabinaRender',
-            //     useMTL: true,
-            //     position: new THREE.Vector3(-5,10,-10),
-            //     rotation: new THREE.Vector3(90,180,0),
-            //     scale: new THREE.Vector3(1,1,1),
-            //     weight: 0,
-            // }),
+            "cabine" : new KingsGame.GameObject({
+                modelPath: './assets/models/Cabana/',
+                fileName: 'cabinas',
+                useMTL: true,
+                position: new THREE.Vector3(-5,10,-10),
+                rotation: new THREE.Vector3(0,0,0),
+                scale: new THREE.Vector3(1,1,1),
+                weight: 0,
+            }),
         };
     };
 
@@ -1377,6 +1005,12 @@
     KingsGame.prototype.loadAssets = function() {
         KingsGame.assets = {};
         KingsGame.assets.meshes = [];
+        KingsGame.assets.sounds = {};
+
+        var audioLoader = new THREE.AudioLoader( KingsGame.manager );
+        audioLoader.load( './assets/sounds/impact.mp3', function( buffer ) {
+            KingsGame.assets.sounds.impactSound = buffer;
+        });
 
         var bmap = new THREE.TextureLoader(KingsGame.manager).load( "./assets/textures/DeathValley.heightmap.jpg" );
         bmap.wrapS = bmap.wrapT = THREE.RepeatWrapping;
@@ -1409,7 +1043,7 @@
             grassTexture:	{ type: "t", value: smap2 },
     	};
 
-    	KingsGame.assets.groundTexture = new THREE.ShaderMaterial({
+        KingsGame.assets.groundTexture = new THREE.ShaderMaterial({
     	    uniforms: customUniforms,
     		vertexShader:   document.getElementById( 'vertexBumpShader'   ).textContent,
     		fragmentShader: document.getElementById( 'fragmentBumpShader' ).textContent,
@@ -1431,89 +1065,77 @@
             KingsGame.scene.add( KingsGame.assets.targetSprite );
         }
 
-        for (var i = 0; i < 1000; i++) {
-            KingsGame.assets.grassMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.grassTexture, useScreenCoordinates: true });
-            KingsGame.assets.grassSprite = new THREE.Sprite( KingsGame.assets.grassMaterial );
-            KingsGame.assets.grassSprite.position.set( -90 - (50 * Math.random()), i, -5 );
-            KingsGame.assets.grassSprite.scale.set( 6, 6, 1.0 );
-            KingsGame.assets.grassSprite.castShadow = true;
-            KingsGame.scene.add( KingsGame.assets.grassSprite );
+        var cargarHierba = function() {
+            for (var i = 0; i < 1000; i++) {
+                KingsGame.assets.grassMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.grassTexture, useScreenCoordinates: true });
+                KingsGame.assets.grassSprite = new THREE.Sprite( KingsGame.assets.grassMaterial );
+                KingsGame.assets.grassSprite.position.set( -90 - (50 * Math.random()), i, -5 );
+                KingsGame.assets.grassSprite.scale.set( 6, 6, 1.0 );
+                KingsGame.assets.grassSprite.castShadow = true;
+                KingsGame.scene.add( KingsGame.assets.grassSprite );
 
-            KingsGame.assets.grassMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.grassTexture, useScreenCoordinates: true });
-            KingsGame.assets.grassSprite = new THREE.Sprite( KingsGame.assets.grassMaterial );
-            KingsGame.assets.grassSprite.position.set( 90 + (50 * Math.random()), i, -5 );
-            KingsGame.assets.grassSprite.scale.set( 6, 6, 1.0 );
-            KingsGame.assets.grassSprite.castShadow = true;
-            KingsGame.scene.add( KingsGame.assets.grassSprite );
-        }
-
-        for (var i = 0; i < 100; i++) {
-            var rand = (3 * Math.random());
-            if(rand >= 0 && rand < 1) {
-                KingsGame.assets.treeMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.treeTexture });
-                KingsGame.assets.treeSprite = new THREE.Sprite( KingsGame.assets.treeMaterial );
-                KingsGame.assets.treeSprite.position.set( 100 + (60 * Math.random()), i*3, 10 );
-            	KingsGame.assets.treeSprite.scale.set( 20, 40, 1.0 );
-                KingsGame.assets.treeSprite.castShadow = true;
-            	KingsGame.scene.add( KingsGame.assets.treeSprite );
-            } else if(rand >= 1 && rand < 2) {
-                KingsGame.assets.treeMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.treeTexture2 });
-                KingsGame.assets.treeSprite2 = new THREE.Sprite( KingsGame.assets.treeMaterial );
-                KingsGame.assets.treeSprite2.position.set( 100 + (60 * Math.random()), i*3, 10 );
-            	KingsGame.assets.treeSprite2.scale.set( 30, 40, 1.0 );
-                KingsGame.assets.treeSprite2.castShadow = true;
-            	KingsGame.scene.add( KingsGame.assets.treeSprite2 );
-            } else if (rand >= 2 && rand <= 3) {
-                KingsGame.assets.treeMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.treeTexture3 });
-                KingsGame.assets.treeSprite3 = new THREE.Sprite( KingsGame.assets.treeMaterial );
-                KingsGame.assets.treeSprite3.position.set( 100 + (60 * Math.random()), i*3, 10 );
-            	KingsGame.assets.treeSprite3.scale.set( 40, 40, 1.0 );
-                KingsGame.assets.treeSprite3.castShadow = true;
-            	KingsGame.scene.add( KingsGame.assets.treeSprite3 );
+                KingsGame.assets.grassMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.grassTexture, useScreenCoordinates: true });
+                KingsGame.assets.grassSprite = new THREE.Sprite( KingsGame.assets.grassMaterial );
+                KingsGame.assets.grassSprite.position.set( 90 + (50 * Math.random()), i, -5 );
+                KingsGame.assets.grassSprite.scale.set( 6, 6, 1.0 );
+                KingsGame.assets.grassSprite.castShadow = true;
+                KingsGame.scene.add( KingsGame.assets.grassSprite );
             }
 
-            rand = (3 * Math.random());
-            if(rand >= 0 && rand < 1) {
-                KingsGame.assets.treeMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.treeTexture });
-                KingsGame.assets.treeSprite = new THREE.Sprite( KingsGame.assets.treeMaterial );
-                KingsGame.assets.treeSprite.position.set( -100 - (60 * Math.random()), i*3, 10 );
-            	KingsGame.assets.treeSprite.scale.set( 20, 40, 1.0 );
-                KingsGame.assets.treeSprite.castShadow = true;
-            	KingsGame.scene.add( KingsGame.assets.treeSprite );
-            } else if(rand >= 1 && rand < 2) {
-                KingsGame.assets.treeMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.treeTexture2 });
-                KingsGame.assets.treeSprite2 = new THREE.Sprite( KingsGame.assets.treeMaterial );
-                KingsGame.assets.treeSprite2.position.set( -100 - (60 * Math.random()), i*3, 10 );
-            	KingsGame.assets.treeSprite2.scale.set( 30, 40, 1.0 );
-                KingsGame.assets.treeSprite2.castShadow = true;
-            	KingsGame.scene.add( KingsGame.assets.treeSprite2 );
-            } else if (rand >= 2 && rand <= 3) {
-                KingsGame.assets.treeMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.treeTexture3 });
-                KingsGame.assets.treeSprite3 = new THREE.Sprite( KingsGame.assets.treeMaterial );
-                KingsGame.assets.treeSprite3.position.set( -100 - (60 * Math.random()), i*3, 10 );
-            	KingsGame.assets.treeSprite3.scale.set( 40, 40, 1.0 );
-                KingsGame.assets.treeSprite3.castShadow = true;
-            	KingsGame.scene.add( KingsGame.assets.treeSprite3 );
+            for (var i = 0; i < 100; i++) {
+                var rand = (3 * Math.random());
+                if(rand >= 0 && rand < 1) {
+                    KingsGame.assets.treeMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.treeTexture });
+                    KingsGame.assets.treeSprite = new THREE.Sprite( KingsGame.assets.treeMaterial );
+                    KingsGame.assets.treeSprite.position.set( 100 + (60 * Math.random()), i*3, 10 );
+                	KingsGame.assets.treeSprite.scale.set( 20, 40, 1.0 );
+                    KingsGame.assets.treeSprite.castShadow = true;
+                	KingsGame.scene.add( KingsGame.assets.treeSprite );
+                } else if(rand >= 1 && rand < 2) {
+                    KingsGame.assets.treeMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.treeTexture2 });
+                    KingsGame.assets.treeSprite2 = new THREE.Sprite( KingsGame.assets.treeMaterial );
+                    KingsGame.assets.treeSprite2.position.set( 100 + (60 * Math.random()), i*3, 10 );
+                	KingsGame.assets.treeSprite2.scale.set( 30, 40, 1.0 );
+                    KingsGame.assets.treeSprite2.castShadow = true;
+                	KingsGame.scene.add( KingsGame.assets.treeSprite2 );
+                } else if (rand >= 2 && rand <= 3) {
+                    KingsGame.assets.treeMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.treeTexture3 });
+                    KingsGame.assets.treeSprite3 = new THREE.Sprite( KingsGame.assets.treeMaterial );
+                    KingsGame.assets.treeSprite3.position.set( 100 + (60 * Math.random()), i*3, 10 );
+                	KingsGame.assets.treeSprite3.scale.set( 40, 40, 1.0 );
+                    KingsGame.assets.treeSprite3.castShadow = true;
+                	KingsGame.scene.add( KingsGame.assets.treeSprite3 );
+                }
+
+                rand = (3 * Math.random());
+                if(rand >= 0 && rand < 1) {
+                    KingsGame.assets.treeMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.treeTexture });
+                    KingsGame.assets.treeSprite = new THREE.Sprite( KingsGame.assets.treeMaterial );
+                    KingsGame.assets.treeSprite.position.set( -100 - (60 * Math.random()), i*3, 10 );
+                	KingsGame.assets.treeSprite.scale.set( 20, 40, 1.0 );
+                    KingsGame.assets.treeSprite.castShadow = true;
+                	KingsGame.scene.add( KingsGame.assets.treeSprite );
+                } else if(rand >= 1 && rand < 2) {
+                    KingsGame.assets.treeMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.treeTexture2 });
+                    KingsGame.assets.treeSprite2 = new THREE.Sprite( KingsGame.assets.treeMaterial );
+                    KingsGame.assets.treeSprite2.position.set( -100 - (60 * Math.random()), i*3, 10 );
+                	KingsGame.assets.treeSprite2.scale.set( 30, 40, 1.0 );
+                    KingsGame.assets.treeSprite2.castShadow = true;
+                	KingsGame.scene.add( KingsGame.assets.treeSprite2 );
+                } else if (rand >= 2 && rand <= 3) {
+                    KingsGame.assets.treeMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.treeTexture3 });
+                    KingsGame.assets.treeSprite3 = new THREE.Sprite( KingsGame.assets.treeMaterial );
+                    KingsGame.assets.treeSprite3.position.set( -100 - (60 * Math.random()), i*3, 10 );
+                	KingsGame.assets.treeSprite3.scale.set( 40, 40, 1.0 );
+                    KingsGame.assets.treeSprite3.castShadow = true;
+                	KingsGame.scene.add( KingsGame.assets.treeSprite3 );
+                }
             }
-        }
+        };
     };
 
     KingsGame.prototype.restart = function() {
-        KingsGame.world.clearForces();
 
-        KingsGame.ready = false;
-        KingsGame.gameOver = false;
-        KingsGame.score = 0;
-        KingsGame.paused = false;
-
-        //KingsGame.road.destroy();
-        KingsGame.prototype.initGround();
-        KingsGame.gameobjects.player.reset();
-
-        if(KingsGame.rain != null) {
-            KingsGame.rain.destroy();
-            KingsGame.rain = null;
-        }
     };
 
     KingsGame.prototype.sendMessage = function(message) {
@@ -1527,6 +1149,7 @@
     };
 
     $.fn.initGame = function( parameters ) {
+        console.log(App.usuario);
         if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
         KingsGame.oculusShader = parameters.oculusShader;
@@ -1591,9 +1214,12 @@
 
         KingsGame.gameOverScreen = new GameOverScreen();
         KingsGame.gameOverScreen.render();
-        KingsGame.gameOverScreen.button.on("click", function() {
-            Backbone.trigger("restart");
-            KingsGame.prototype.restart();
+        KingsGame.gameOverScreen.salir.on("click", function() {
+            window.location.href = "./../ShootingSimulator";
+        });
+        KingsGame.gameOverScreen.continuar.on("click", function() {
+            Backbone.trigger('HideScore');
+            instructions.click();
         });
         $(document.body).append( KingsGame.gameOverScreen.$el );
 
@@ -1641,11 +1267,6 @@
         KingsGame.world.broadphase = new CANNON.SAPBroadphase(KingsGame.world);
         KingsGame.world.solver.iterations = 10;
         KingsGame.world.defaultContactMaterial.friction = 0.2;
-
-        KingsGame.prototype.initLoadManager();
-        KingsGame.prototype.loadAssets();
-        KingsGame.prototype.initGround();
-        KingsGame.prototype.initGameObjects();
 
         var hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 0.6 );
         hemiLight.color.setHSL( 0.6, 1, 0.6 );
@@ -1700,6 +1321,8 @@
 
         KingsGame.listener = new THREE.AudioListener();
 		KingsGame.camera.add( KingsGame.listener );
+
+        KingsGame.prototype.initLoadManager();
 
         //KingsGame.oculusController = new KingsGame.Oculus();
         KingsGame.controls = new THREE.PointerLockControls(KingsGame.camera);
@@ -1796,6 +1419,6 @@
 
         KingsGame.oculuscontrol.connect();
 
-        KingsGame.prototype.render();
+        KingsGame.prototype.loadAssets();
     };
 }));
