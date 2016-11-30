@@ -18,13 +18,19 @@ define(['jquery','Backbone','underscore','./leaderBoard/leaderBoard'], function(
                         '<td><%= nivel %></td>'+
                     '</tr>'+
                     '<tr>'+
-                        '<td>Puntuacion</td>'+
-                        '<td><%= puntos %></td>'+
+                        '<td>Punteria</td>'+
+                        '<td><%= puntos %>%</td>'+
                     '</tr>'+
                 '</table>'+
             '</div>'
         ),
         showScreen: function(usuario) {
+            this.leaderBoardContainer.empty();
+            this.leaderBoardContainer.append(this.templateModal({
+                nombre: App.usuario.nombre,
+                nivel: App.usuario.nivel,
+                puntos: parseInt(App.usuario.puntuacion),
+            }));
             $(".gameOverScreen").css("display", "block");
         },
         hideScreen: function() {
@@ -45,7 +51,7 @@ define(['jquery','Backbone','underscore','./leaderBoard/leaderBoard'], function(
                 id: 'continuar',
                 value: "Continuar"
             });
-            var messageContainer = $("<div />", {
+            this.messageContainer = $("<div />", {
                 class: "messageContainer"
             });
             this.leaderBoardContainer.append(this.templateModal({
@@ -53,10 +59,10 @@ define(['jquery','Backbone','underscore','./leaderBoard/leaderBoard'], function(
                 nivel: App.usuario.nivel,
                 puntos: App.usuario.puntuacion,
             }));
-            messageContainer.append(this.leaderBoardContainer);
-            messageContainer.append(this.salir);
-            messageContainer.append(this.continuar);
-            this.$el.append(messageContainer);
+            this.messageContainer.append(this.leaderBoardContainer);
+            this.messageContainer.append(this.salir);
+            this.messageContainer.append(this.continuar);
+            this.$el.append(this.messageContainer);
         }
     });
     return gameOverScreen;

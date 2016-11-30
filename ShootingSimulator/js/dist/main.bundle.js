@@ -65,6 +65,8 @@
 					App.usuario = {
 						nombre: nombre,
 						nivel: parseInt(nivel),
+						aciertos: 0,
+						balasDisparadas: 0,
 						puntuacion: 0
 					};
 					$("#gameContainer").initGame({
@@ -10467,6 +10469,7 @@
 	        this.position = parameters.position;
 	        this.velocity = parameters.velocity || 1;
 	        this.direction = parameters.direction;
+	        this.quaternion = parameters.quaternion;
 	        this.life = 5000;
 
 	        this.shape = new CANNON.Sphere(1);
@@ -10479,7 +10482,9 @@
 	                parameters.position.z
 	            )
 	        });
+	        this.body.name = 'bala';
 	        this.body.addShape(this.shape);
+	        this.body.quaternion.copy(this.quaternion);
 	        KingsGame.world.addBody( this.body );
 
 	        var modelShape = new THREE.SphereGeometry(1,32,32);
@@ -10494,7 +10499,7 @@
 	        } );
 	        this.model.position.copy( this.body.position );
 	        this.model.quaternion.copy( this.body.quaternion );
-	        this.model.receiveShadow = true;
+	        this.model.receiveShadow = false;
 	        this.model.castShadow = true;
 	        KingsGame.scene.add( this.model );
 
@@ -10508,6 +10513,8 @@
 
 	        this.body.addEventListener("collide", function() {
 	            self.sound.play();
+	            KingsGame.scene.remove( self.model );
+	            KingsGame.world.removeBody ( self.body );
 	        });
 	    };
 
@@ -10561,7 +10568,7 @@
 	        var vector = new THREE.Vector3( 0, -3, 0 );
 	        vector.applyAxisAngle( new THREE.Vector3( 0, 0, 1 ), this.rotation.y*(Math.PI/180) );
 	        vector.applyAxisAngle( new THREE.Vector3( 1, 0, 0 ), (this.rotation.x-90)*(Math.PI/180) );
-	        this.body.position.set(vector.x,vector.y+8,vector.z);
+	        this.body.position.set(vector.x,vector.y+8,vector.z+0.7);
 	        if(vector.z < -2 && this.remainingBullets < 8){
 	            this.reload();
 	        }
@@ -10604,10 +10611,13 @@
 	            var bullet = new KingsGame.Bullet({
 	                position: KingsGame.gameobjects.player.body.position.clone(),
 	                direction: KingsGame.gameobjects.player.getDirection(),
-	                velocity: 1
+	                quaternion: KingsGame.gameobjects.player.body.quaternion,
+	                velocity: 3
 	            });
 	            this.bulletsShooted.push(bullet);
 	            this.remainingBullets--;
+	            App.usuario.balasDisparadas++;
+	            App.usuario.puntuacion = (App.usuario.aciertos / App.usuario.balasDisparadas) * 100;
 	        }
 	    };
 
@@ -10803,7 +10813,13 @@
 	        var elements = _.toArray(KingsGame.gameobjects);
 	        if(KingsGame.ready) {
 	            for (var i = 0; i < elements.length; i++) {
-	                elements[i].update();
+	                if(Array.isArray(elements[i])) {
+	                    for (var j = 0; j < elements[i].length; j++) {
+	                        elements[i][j].update();
+	                    }
+	                } else {
+	                    elements[i].update();
+	                }
 	            }
 	        }
 
@@ -11066,18 +11082,18 @@
 	        THREE.crossOrigin = "";
 	        KingsGame.groundMaterial = new CANNON.Material("groundMaterial");
 
-	        var groundBody = new CANNON.Body({
+	        KingsGame.groundBody = new CANNON.Body({
 	            mass: 0,
 	            position: new CANNON.Vec3(0,0,-12.5)
 	        });
 	        var groundShape = new CANNON.Plane();
-	        groundBody.addShape(groundShape);
-	        KingsGame.world.addBody(groundBody);
+	        KingsGame.groundBody.addShape(groundShape);
+	        KingsGame.world.addBody(KingsGame.groundBody);
 
 	        var modelShape = new THREE.PlaneGeometry(1000,1000,100,100);
 	        var model = new THREE.Mesh( modelShape, KingsGame.assets.groundTexture );
-	        model.position.copy( groundBody.position );
-	        model.quaternion.copy( groundBody.quaternion );
+	        model.position.copy( KingsGame.groundBody.position );
+	        model.quaternion.copy( KingsGame.groundBody.quaternion );
 	        model.receiveShadow = true;
 	        KingsGame.scene.add( model );
 	    };
@@ -11098,7 +11114,7 @@
 	                modelPath: './assets/models/ManoColt/',
 	                fileName: 'Bala',
 	                useMTL: true,
-	                position: new THREE.Vector3(0,10,0),
+	                position: new THREE.Vector3(0,0,0),
 	                rotation: new THREE.Vector3(90,-180,0),
 	                scale: new THREE.Vector3(0.3,0.3,0.3),
 	                weight: 0,
@@ -11111,23 +11127,32 @@
 	                weight: 0,
 	                soundPath: './assets/sounds/reload.mp3'
 	            }),
-	            "crate" : new KingsGame.GameObject({
-	                modelPath: './assets/models/crate/',
-	                fileName: 'crate',
-	                useMTL: true,
-	                position: new THREE.Vector3(0,80,2),
-	                scale: new THREE.Vector3(4,4,4),
-	                weight: 10,
-	            }),
-	            "crate2" : new KingsGame.GameObject({
-	                modelPath: './assets/models/crate/',
-	                fileName: 'crate',
-	                useMTL: true,
-	                position: new THREE.Vector3(0,80,6),
-	                rotation: new THREE.Vector3(0,0,4),
-	                scale: new THREE.Vector3(4,4,4),
-	                weight: 100,
-	            }),
+	            // "crate" : new KingsGame.GameObject({
+	            //     modelPath: './assets/models/crate/',
+	            //     fileName: 'crate',
+	            //     useMTL: true,
+	            //     position: new THREE.Vector3(0,80,2),
+	            //     scale: new THREE.Vector3(4,4,4),
+	            //     weight: 10,
+	            // }),
+	            // "crate2" : new KingsGame.GameObject({
+	            //     modelPath: './assets/models/crate/',
+	            //     fileName: 'crate',
+	            //     useMTL: true,
+	            //     position: new THREE.Vector3(0,80,6),
+	            //     rotation: new THREE.Vector3(0,0,4),
+	            //     scale: new THREE.Vector3(4,4,4),
+	            //     weight: 100,
+	            // }),
+	            // 'target': new KingsGame.GameObject({
+	            //     modelPath: './assets/models/target/',
+	            //     fileName: 'target',
+	            //     useMTL: true,
+	            //     position: new THREE.Vector3(40,10,40),
+	            //     rotation: new THREE.Vector3(0,0,0),
+	            //     scale: new THREE.Vector3(10,10,10),
+	            //     weight: 10,
+	            // }),
 	            "cabine" : new KingsGame.GameObject({
 	                modelPath: './assets/models/Cabana/',
 	                fileName: 'cabinas',
@@ -11138,6 +11163,32 @@
 	                weight: 0,
 	            }),
 	        };
+
+	        KingsGame.gameobjects.targets = [];
+	        switch (App.usuario.nivel) {
+	            case 1: {
+	                for (var i = 0; i < 10; i++) {
+	                    var pos = new CANNON.Vec3( -80 + (i*16), 60 + (30 * Math.random()), 2 );
+	                    KingsGame.gameobjects.targets.push(new KingsGame.GameObject({
+	                        modelPath: './assets/models/target/',
+	                        fileName: 'target',
+	                        useMTL: true,
+	                        position: new THREE.Vector3(pos.x,pos.y,pos.z),
+	                        rotation: new THREE.Vector3(90,180,0),
+	                        scale: new THREE.Vector3(5,5,5),
+	                        weight: 10000
+	                    }));
+	                    KingsGame.gameobjects.targets[i].bindCollideEvent(function(e) {
+	                        if (e.body.name != null) {
+	                            App.usuario.aciertos++;
+	                        }
+	                    });
+	                }
+	                break;
+	            }
+	            default: {}
+	        }
+	        console.log(KingsGame.gameobjects.targets);
 	    };
 
 	    KingsGame.prototype.alreadyLoaded = function(name) {
@@ -11202,15 +11253,6 @@
 	        KingsGame.assets.treeTexture3 = new THREE.TextureLoader(KingsGame.manager).load("./assets/textures/tree4.png");
 	        KingsGame.assets.grassTexture = new THREE.TextureLoader(KingsGame.manager).load("./assets/textures/grass.png");
 	        KingsGame.assets.targetTexture = new THREE.TextureLoader(KingsGame.manager).load("./assets/textures/target01.png");
-
-	        for (var i = 0; i < 10; i++) {
-	            KingsGame.assets.targetMaterial = new THREE.SpriteMaterial( { map: KingsGame.assets.targetTexture });
-	            KingsGame.assets.targetSprite = new THREE.Sprite( KingsGame.assets.targetMaterial );
-	            KingsGame.assets.targetSprite.position.set( -80 + (i*16), 200 + (60 * Math.random()), 5 );
-	            KingsGame.assets.targetSprite.scale.set( 10, 10, 1.0 );
-	            KingsGame.assets.targetSprite.castShadow = true;
-	            KingsGame.scene.add( KingsGame.assets.targetSprite );
-	        }
 
 	        var cargarHierba = function() {
 	            for (var i = 0; i < 1000; i++) {
@@ -77563,13 +77605,19 @@
 	                        '<td><%= nivel %></td>'+
 	                    '</tr>'+
 	                    '<tr>'+
-	                        '<td>Puntuacion</td>'+
-	                        '<td><%= puntos %></td>'+
+	                        '<td>Punteria</td>'+
+	                        '<td><%= puntos %>%</td>'+
 	                    '</tr>'+
 	                '</table>'+
 	            '</div>'
 	        ),
 	        showScreen: function(usuario) {
+	            this.leaderBoardContainer.empty();
+	            this.leaderBoardContainer.append(this.templateModal({
+	                nombre: App.usuario.nombre,
+	                nivel: App.usuario.nivel,
+	                puntos: parseInt(App.usuario.puntuacion),
+	            }));
 	            $(".gameOverScreen").css("display", "block");
 	        },
 	        hideScreen: function() {
@@ -77590,7 +77638,7 @@
 	                id: 'continuar',
 	                value: "Continuar"
 	            });
-	            var messageContainer = $("<div />", {
+	            this.messageContainer = $("<div />", {
 	                class: "messageContainer"
 	            });
 	            this.leaderBoardContainer.append(this.templateModal({
@@ -77598,10 +77646,10 @@
 	                nivel: App.usuario.nivel,
 	                puntos: App.usuario.puntuacion,
 	            }));
-	            messageContainer.append(this.leaderBoardContainer);
-	            messageContainer.append(this.salir);
-	            messageContainer.append(this.continuar);
-	            this.$el.append(messageContainer);
+	            this.messageContainer.append(this.leaderBoardContainer);
+	            this.messageContainer.append(this.salir);
+	            this.messageContainer.append(this.continuar);
+	            this.$el.append(this.messageContainer);
 	        }
 	    });
 	    return gameOverScreen;

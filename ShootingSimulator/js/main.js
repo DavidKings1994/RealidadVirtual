@@ -19,6 +19,8 @@ define(['jquery', "./game/KingsGame"],  function($, KingsGame) {
 				App.usuario = {
 					nombre: nombre,
 					nivel: parseInt(nivel),
+					aciertos: 0,
+					balasDisparadas: 0,
 					puntuacion: 0
 				};
 				$("#gameContainer").initGame({
