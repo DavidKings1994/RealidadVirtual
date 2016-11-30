@@ -10558,6 +10558,13 @@
 	    KingsGame.Player.prototype.constructor = KingsGame.Player;
 
 	    KingsGame.Player.prototype.update = function() {
+	        var vector = new THREE.Vector3( 0, -3, 0 );
+	        vector.applyAxisAngle( new THREE.Vector3( 0, 0, 1 ), this.rotation.y*(Math.PI/180) );
+	        vector.applyAxisAngle( new THREE.Vector3( 1, 0, 0 ), (this.rotation.x-90)*(Math.PI/180) );
+	        this.body.position.set(vector.x,vector.y+8,vector.z);
+	        if(vector.z < -2 && this.remainingBullets < 8){
+	            this.reload();
+	        }
 	        KingsGame.GameObject.prototype.update.call(this);
 
 	        for (var i = 0; i < this.bulletsShooted.length; i++) {
@@ -10597,7 +10604,7 @@
 	            var bullet = new KingsGame.Bullet({
 	                position: KingsGame.gameobjects.player.body.position.clone(),
 	                direction: KingsGame.gameobjects.player.getDirection(),
-	                velocity: 10
+	                velocity: 1
 	            });
 	            this.bulletsShooted.push(bullet);
 	            this.remainingBullets--;
@@ -10610,23 +10617,28 @@
 	    };
 
 	    KingsGame.Player.prototype.getDirection = function() {
-	        var temp = new THREE.Vector3(0,0,1);
-
-	        var m = new THREE.Matrix4();
-
-	        var m1 = new THREE.Matrix4();
-	        var m2 = new THREE.Matrix4();
-	        var m3 = new THREE.Matrix4();
-
-	        m1.makeRotationX( KingsGame.gameobjects.player.rotation.x * (Math.PI / 180) );
-	        m2.makeRotationY( KingsGame.gameobjects.player.rotation.y * (Math.PI / 180) );
-	        m3.makeRotationZ( KingsGame.gameobjects.player.rotation.z * (Math.PI / 180) );
-
-	        m.multiplyMatrices( m1, m3 );
-	        m.multiply( m2 );
-
-	        temp.applyMatrix4(m);
-	        return temp;
+	        var vector = new THREE.Vector3( 0, -1, 0 );
+	        vector.applyAxisAngle( new THREE.Vector3( 0, 0, 1 ), this.rotation.y*(Math.PI/180) );
+	        //vector.applyAxisAngle( new THREE.Vector3( 0, 1, 0 ), this.rotation.z*(Math.PI/180) );
+	        vector.applyAxisAngle( new THREE.Vector3( 1, 0, 0 ), (this.rotation.x-90)*(Math.PI/180) );
+	        return vector;
+	        // var temp = new THREE.Vector3(0,0,1);
+	        //
+	        // var m = new THREE.Matrix4();
+	        //
+	        // var m1 = new THREE.Matrix4();
+	        // var m2 = new THREE.Matrix4();
+	        // var m3 = new THREE.Matrix4();
+	        //
+	        // m1.makeRotationX( KingsGame.gameobjects.player.rotation.x * (Math.PI / 180) );
+	        // m2.makeRotationY( KingsGame.gameobjects.player.rotation.y * (Math.PI / 180) );
+	        // m3.makeRotationZ( KingsGame.gameobjects.player.rotation.z * (Math.PI / 180) );
+	        //
+	        // m.multiplyMatrices( m1, m3 );
+	        // m.multiply( m2 );
+	        //
+	        // temp.applyMatrix4(m);
+	        // return temp;
 	    };
 
 	    KingsGame.Player.prototype.reset = function() {
@@ -11018,9 +11030,10 @@
 	        case 39: // right
 	        case 37: // left
 	        case 68: // d
+	            KingsGame.gameobjects.player.rotation = new THREE.Vector3(90,-180,0);
+	            break;
 	        case 82: //r
 	            KingsGame.gameobjects.player.reload();
-	            //KingsGame.gameobjects.player.body.angularVelocity.set(0,0,0);
 	            break;
 	        case 32: //space
 	            KingsGame.gameobjects.player.shoot();
@@ -11292,6 +11305,10 @@
 	        KingsGame.haptic = {
 	            pastRotation: new THREE.Vector3(),
 	            actualRotation: new THREE.Vector3(),
+	            difference: new THREE.Vector3(),
+	            filter: 15,
+	            trigger: 0,
+	            pastTrigger: 0,
 	            started: false
 	        };
 	        KingsGame.serialExtensionId = "mgfmopegkdlopmkaodehjmdmpbjphlnc";
@@ -11306,9 +11323,22 @@
 	                    KingsGame.haptic.started = true;
 	                }
 
-	                KingsGame.gameobjects.player.rotation.x -= KingsGame.haptic.actualRotation.z - KingsGame.haptic.pastRotation.z;
-	                KingsGame.gameobjects.player.rotation.y += KingsGame.haptic.actualRotation.y - KingsGame.haptic.pastRotation.y;
-	                KingsGame.gameobjects.player.rotation.z -= KingsGame.haptic.actualRotation.x - KingsGame.haptic.pastRotation.x;
+	                KingsGame.haptic.difference.z = KingsGame.haptic.actualRotation.z - KingsGame.haptic.pastRotation.z;
+	                KingsGame.haptic.difference.y = KingsGame.haptic.actualRotation.y - KingsGame.haptic.pastRotation.y;
+	                KingsGame.haptic.difference.x = KingsGame.haptic.actualRotation.x - KingsGame.haptic.pastRotation.x;
+
+	                var newX = (KingsGame.haptic.difference.z > KingsGame.haptic.filter || KingsGame.haptic.difference.z < KingsGame.haptic.filter) ? KingsGame.haptic.difference.z : 0;
+	                var newY = (KingsGame.haptic.difference.y > KingsGame.haptic.filter || KingsGame.haptic.difference.y < KingsGame.haptic.filter) ? KingsGame.haptic.difference.y : 0;
+	                var newZ = (KingsGame.haptic.difference.x > KingsGame.haptic.filter || KingsGame.haptic.difference.x < KingsGame.haptic.filter) ? KingsGame.haptic.difference.x : 0;
+
+	                var vector = new THREE.Vector3( newX, newY, 0 );
+	                vector.applyAxisAngle( new THREE.Vector3( 0, 0, 1 ), KingsGame.gameobjects.player.rotation.z*(Math.PI/180) );
+	                newX = vector.x;
+	                newY = vector.y;
+
+	                KingsGame.gameobjects.player.rotation.x -= newX;
+	                KingsGame.gameobjects.player.rotation.y += newY;
+	                KingsGame.gameobjects.player.rotation.z -= newZ;
 
 	                KingsGame.haptic.pastRotation.set(
 	                    KingsGame.haptic.actualRotation.x,
@@ -11317,9 +11347,12 @@
 	                );
 
 	                var shoting = msg.substring(msg.indexOf("#TRI:")+5, msg.length-1);
-	                if (parseInt(shoting) != 0) {
+	                KingsGame.haptic.trigger = parseInt(shoting);
+	                console.log(KingsGame.haptic.trigger);
+	                if (KingsGame.haptic.trigger != 0 && KingsGame.haptic.trigger != KingsGame.haptic.pastTrigger) {
 	                    KingsGame.gameobjects.player.shoot();
 	                }
+	                KingsGame.haptic.pastTrigger = KingsGame.haptic.trigger;
 	            }
 	        });
 
@@ -75155,12 +75188,12 @@
 
 			// assumes the camera itself is not rotated
 
-			var direction = new THREE.Vector3( 0, 0, - 1 );
-			var rotation = new THREE.Euler( 0, 0, 0, "YXZ" );
+			var direction = new THREE.Vector3( 0, -1, 0 );
+			var rotation = new THREE.Euler( 0, 0, 0, "ZXY" );
 
 			return function( v ) {
 
-				rotation.set( pitchObject.rotation.z, yawObject.rotation.y, 0 );
+				rotation.set( pitchObject.rotation.x, yawObject.rotation.z, 0 );
 
 				v.copy( direction ).applyEuler( rotation );
 

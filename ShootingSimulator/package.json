@@ -17,13 +17,13 @@
   },
   "homepage": "https://github.com/DavidKings1994/RealidadVirtual#readme",
   "dependencies": {
-    "ammo": "^2.0.2",
-    "backbone": "~1.3.3",
-    "bootstrap": "~3.3.6",
-    "cannon": "~0.6.2",
-    "jquery": "~3.0.0",
-    "three": "^0.81.0",
-    "tracking": "~1.1.2",
-    "vr": "^0.2.0"
+    "ammo": "2.0.2",
+    "backbone": "1.3.3",
+    "bootstrap": "3.3.6",
+    "cannon": "0.6.2",
+    "jquery": "3.0.0",
+    "three": "0.81.0",
+    "tracking": "1.1.2",
+    "vr": "0.2.0"
   }
 }
