@@ -10270,6 +10270,7 @@
 	        this.bounciness = parameters.bounciness || 0;
 	        this.modelPath = parameters.modelPath;
 	        this.name = parameters.name || parameters.fileName;
+	        this.customUpdate = parameters.update || function() {};
 
 	        var shape;
 	        switch (this.shape) {
@@ -10358,6 +10359,7 @@
 	        constructor: KingsGame.GameObject,
 
 	        update: function() {
+	            this.customUpdate();
 	            this.position.copy( this.body.position );
 	            this.model.position.copy( this.body.position );
 	            this.model.quaternion.copy( this.body.quaternion );
@@ -10474,7 +10476,7 @@
 
 	        this.shape = new CANNON.Sphere(1);
 	        this.body = new CANNON.Body({
-	            mass: 0,
+	            mass: 1,
 	            material: new CANNON.Material(),
 	            position: new CANNON.Vec3(
 	                parameters.position.x,
@@ -10486,6 +10488,13 @@
 	        this.body.addShape(this.shape);
 	        this.body.quaternion.copy(this.quaternion);
 	        KingsGame.world.addBody( this.body );
+	        var worldPoint = new CANNON.Vec3(0,0,0);
+	        var impulse = new CANNON.Vec3(
+	            this.direction.x*this.velocity,
+	            this.direction.y*this.velocity,
+	            this.direction.z*this.velocity
+	        );
+	        this.body.applyLocalForce(impulse,worldPoint);
 
 	        var modelShape = new THREE.SphereGeometry(1,32,32);
 	        this.model = KingsGame.gameobjects.bala.model.clone();
@@ -10511,10 +10520,15 @@
 	        this.model.add( this.sound );
 	        this.soundAnalyser = new THREE.AudioAnalyser( this.sound, 32 );
 
-	        this.body.addEventListener("collide", function() {
-	            self.sound.play();
-	            KingsGame.scene.remove( self.model );
-	            KingsGame.world.removeBody ( self.body );
+	        this.body.addEventListener("collide", function(e) {
+	            if (e.body.target != null) {
+	                self.sound.play();
+	                e.body.mass = 10;
+	                e.body.updateMassProperties();
+	                KingsGame.scene.remove( self.model );
+	                KingsGame.world.removeBody ( self.body );
+	                console.log(e);
+	            }
 	        });
 	    };
 
@@ -10522,9 +10536,9 @@
 	        update: function() {
 	            this.life--;
 	            if(this.life > 0) {
-	                this.body.position.x += this.direction.x * this.velocity;
-	                this.body.position.y += this.direction.y * this.velocity;
-	                this.body.position.z += this.direction.z * this.velocity;
+	                // this.body.position.x += this.direction.x * this.velocity;
+	                // this.body.position.y += this.direction.y * this.velocity;
+	                // this.body.position.z += this.direction.z * this.velocity;
 	                this.position.copy( this.body.position );
 	                this.model.position.copy( this.body.position );
 	                this.model.quaternion.copy( this.body.quaternion );
@@ -10612,7 +10626,7 @@
 	                position: KingsGame.gameobjects.player.body.position.clone(),
 	                direction: KingsGame.gameobjects.player.getDirection(),
 	                quaternion: KingsGame.gameobjects.player.body.quaternion,
-	                velocity: 3
+	                velocity: 35714.286
 	            });
 	            this.bulletsShooted.push(bullet);
 	            this.remainingBullets--;
@@ -10971,10 +10985,6 @@
 	        KingsGame.composer.reset();
 	    }
 
-	    KingsGame.prototype.onMouseMove = function( event ) {
-	        //
-	    }
-
 	    KingsGame.prototype.keyHandler = function(event) {
 	        var up = (event.type == 'keyup');
 
@@ -11176,6 +11186,72 @@
 	                        position: new THREE.Vector3(pos.x,pos.y,pos.z),
 	                        rotation: new THREE.Vector3(90,180,0),
 	                        scale: new THREE.Vector3(5,5,5),
+	                        weight: 10
+	                    }));
+	                    KingsGame.gameobjects.targets[i].bindCollideEvent(function(e) {
+	                        if (e.body.name != null) {
+	                            App.usuario.aciertos++;
+	                        }
+	                    });
+	                    KingsGame.gameobjects.targets[i].body.target = 'target';
+	                }
+	                break;
+	            }
+	            case 2: {
+	                var geometry = new THREE.BoxGeometry( 160, 50, 3 );
+	                var material = new THREE.MeshPhongMaterial( {
+	                    map: KingsGame.assets.woodTexture,
+	                    shininess: 5
+	                } );
+	                var cube = new THREE.Mesh( geometry, material );
+	                cube.position.set(0,80,0);
+	                KingsGame.scene.add( cube );
+	                for (var i = 0; i < 8; i++) {
+	                    var pos = new CANNON.Vec3( (80 * Math.random()) -80, 60 + (i*4), 1 );
+	                    KingsGame.gameobjects.targets.push(new KingsGame.GameObject({
+	                        modelPath: './assets/models/target/',
+	                        fileName: 'target',
+	                        useMTL: true,
+	                        position: new THREE.Vector3(pos.x,pos.y,pos.z),
+	                        rotation: new THREE.Vector3(90,180,0),
+	                        scale: new THREE.Vector3(5,5,5),
+	                        weight: 0,
+	                        update: function() {
+	                            if(this.movingRight) {
+	                                if (this.body.position.x >= -80) {
+	                                    this.body.position.x -= 1;
+	                                } else {
+	                                    this.movingRight = false;
+	                                }
+	                            } else {
+	                                if (this.body.position.x <= 80) {
+	                                    this.body.position.x += 1;
+	                                } else {
+	                                    this.movingRight = true;
+	                                }
+	                            }
+	                        }
+	                    }));
+	                    KingsGame.gameobjects.targets[i].movingRight = (( 10 * Math.random())+1 > 5) ? false : true;
+	                    KingsGame.gameobjects.targets[i].bindCollideEvent(function(e) {
+	                        if (e.body.name != null) {
+	                            App.usuario.aciertos++;
+	                        }
+	                    });
+	                    KingsGame.gameobjects.targets[i].body.target = 'target';
+	                }
+	                break;
+	            }
+	            case 3: {
+	                for (var i = 0; i < 10; i++) {
+	                    var pos = new CANNON.Vec3( -80 + (i*16), 60 + (30 * Math.random()), 2 );
+	                    KingsGame.gameobjects.targets.push(new KingsGame.GameObject({
+	                        modelPath: './assets/models/target/',
+	                        fileName: 'target',
+	                        useMTL: true,
+	                        position: new THREE.Vector3(pos.x,pos.y,pos.z),
+	                        rotation: new THREE.Vector3(90,180,0),
+	                        scale: new THREE.Vector3(5,5,5),
 	                        weight: 10000
 	                    }));
 	                    KingsGame.gameobjects.targets[i].bindCollideEvent(function(e) {
@@ -11183,12 +11259,12 @@
 	                            App.usuario.aciertos++;
 	                        }
 	                    });
+	                    KingsGame.gameobjects.targets[i].body.target = 'target';
 	                }
 	                break;
 	            }
 	            default: {}
 	        }
-	        console.log(KingsGame.gameobjects.targets);
 	    };
 
 	    KingsGame.prototype.alreadyLoaded = function(name) {
@@ -11253,6 +11329,9 @@
 	        KingsGame.assets.treeTexture3 = new THREE.TextureLoader(KingsGame.manager).load("./assets/textures/tree4.png");
 	        KingsGame.assets.grassTexture = new THREE.TextureLoader(KingsGame.manager).load("./assets/textures/grass.png");
 	        KingsGame.assets.targetTexture = new THREE.TextureLoader(KingsGame.manager).load("./assets/textures/target01.png");
+	        KingsGame.assets.woodTexture = new THREE.TextureLoader(KingsGame.manager).load("./assets/textures/woodTile.jpg");
+	        KingsGame.assets.woodTexture.wrapS = KingsGame.assets.woodTexture.wrapT = THREE.RepeatWrapping;
+	        KingsGame.assets.woodTexture.repeat.set( 10, 0.4 );
 
 	        var cargarHierba = function() {
 	            for (var i = 0; i < 1000; i++) {

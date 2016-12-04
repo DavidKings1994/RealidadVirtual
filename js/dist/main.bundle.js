@@ -81,6 +81,7 @@
 	                        '</tr>'+
 	                    '</table>'+
 	                    '<input type="button" id="botonComenzar" value="Comenzar">'+
+	                    '<a href="./ShootingSimulator/php/download.php">Descargar complementos</a>'+
 	                '</div>'
 	            ),
 	            render: function() {

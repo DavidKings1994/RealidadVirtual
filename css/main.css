@@ -36,7 +36,6 @@ body {
     left: 50%;
     transform: translate(-50%,-50%);
     width: 440px;
-    height: 230px;
     border-radius: 5px;
     background: rgb(63,60,58);
     font-family: opensans-semibold;
@@ -72,4 +71,11 @@ body {
     border-radius: 5px;
     color: rgb(50,50,50);
     font-family: opensans-bold;
+}
+
+.PantallaUsuario a {
+    color: rgb(200,200,200);
+    text-align: center;
+    display: block;
+    margin: 20px auto;
 }
