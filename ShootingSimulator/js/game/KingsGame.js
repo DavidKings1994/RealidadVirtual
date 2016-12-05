@@ -750,7 +750,7 @@
         KingsGame.renderer.clear();
         KingsGame.renderer.toneMappingExposure = Math.pow( KingsGame.params.exposure, 4.0 );
         //KingsGame.controls.update( KingsGame.clock.getDelta() );
-        //KingsGame.oculuscontrol.update( KingsGame.clock.getDelta() );
+        KingsGame.oculuscontrol.update( KingsGame.clock.getDelta() );
         if(KingsGame.oculusShader) {
             //KingsGame.effect.render( KingsGame.scene, KingsGame.camera );
 
@@ -1286,6 +1286,7 @@
 
         KingsGame.oculusShader = parameters.oculusShader;
         KingsGame.colorTracking = parameters.colorTracking;
+        KingsGame.start = false;
 
         KingsGame.haptic = {
             pastRotation: new THREE.Vector3(),
@@ -1333,9 +1334,12 @@
 
                 var shoting = msg.substring(msg.indexOf("#TRI:")+5, msg.length-1);
                 KingsGame.haptic.trigger = parseInt(shoting);
-                console.log(KingsGame.haptic.trigger);
-                if (KingsGame.haptic.trigger != 0 && KingsGame.haptic.trigger != KingsGame.haptic.pastTrigger) {
-                    KingsGame.gameobjects.player.shoot();
+                if(KingsGame.start){
+                    if (KingsGame.haptic.trigger != 0 && KingsGame.haptic.trigger != KingsGame.haptic.pastTrigger) {
+                        KingsGame.gameobjects.player.shoot();
+                    }
+                } else {
+                    KingsGame.start = true;
                 }
                 KingsGame.haptic.pastTrigger = KingsGame.haptic.trigger;
             }
@@ -1476,7 +1480,7 @@
 
         KingsGame.prototype.initLoadManager();
 
-        //KingsGame.oculusController = new KingsGame.Oculus();
+        KingsGame.oculusController = new KingsGame.Oculus();
         KingsGame.controls = new THREE.PointerLockControls(KingsGame.camera);
         KingsGame.scene.add( KingsGame.controls.getObject() );
 
