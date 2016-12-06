@@ -29,7 +29,6 @@ define(['jquery','Backbone','underscore'],  function($, Backbone, _) {
                                 '<select name="niveles">'+
                                     '<option value="1">1.- Dianas</option>'+
                                     '<option value="2">2.- Objetivos en movimiento</option>'+
-                                    '<option value="3">3.- Platillos voladores</option>'+
                                 '</select>'+
                             '</td>'+
                         '</tr>'+

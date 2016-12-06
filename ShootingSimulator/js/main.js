@@ -26,7 +26,8 @@ define(['jquery', "./game/KingsGame"],  function($, KingsGame) {
 				$("#gameContainer").initGame({
 					pointerLocked: true,
 					oculusShader: false,
-					colorTracking: false
+					colorTracking: false,
+					oculusControlEnabled: true
 				});
 			},
 

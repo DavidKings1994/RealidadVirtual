@@ -32,6 +32,7 @@
 	require('./../../node_modules/three/examples/js/postprocessing/BloomPass.js');
 	require('./../../node_modules/three/examples/js/postprocessing/FilmPass.js');
     require('./../../node_modules/three/examples/js/effects/StereoEffect.js');
+    require('./../../node_modules/three/examples/js/effects/VREffect.js');
     require('./../../node_modules/three/examples/js/shaders/FXAAShader.js');
 	require('./../../node_modules/three/examples/js/shaders/ConvolutionShader.js');
 	require('./../../node_modules/three/examples/js/shaders/LuminosityHighPassShader.js');
@@ -101,16 +102,12 @@
         },
 
         bridgeOrientationUpdated: function (quat) {
-            //KingsGame.camera.quaternion.set(quat.x, quat.y, quat.z, quat.w);
+            KingsGame.camera.quaternion.set(quat.x, quat.y, quat.z, quat.w);
+            KingsGame.camera.rotation.x += (90 + xQ) * (Math.PI / 180);
+            //KingsGame.camera.rotation.y += yQ * (Math.PI / 180);
+            //KingsGame.camera.rotation.z += zQ * (Math.PI / 180);
+            KingsGame.camera.updateMatrix();
 
-            var quat = new THREE.Quaternion();
-            quat.setFromAxisAngle(KingsGame.bodyAxis, KingsGame.bodyAngle);
-            var quatCam = new THREE.Quaternion(quatValues.x, quatValues.y, quatValues.z, quatValues.w);
-            quat.multiply(quatCam);
-            var xzVector = new THREE.Vector3(0, 0, 1);
-            xzVector.applyQuaternion(quat);
-            viewAngle = Math.atan2(xzVector.z, xzVector.x) + Math.PI;
-            KingsGame.camera.quaternion.copy(quat);
         },
 
         bridgeConnected: function (){
@@ -446,7 +443,7 @@
         var vector = new THREE.Vector3( 0, -3, 0 );
         vector.applyAxisAngle( new THREE.Vector3( 0, 0, 1 ), this.rotation.y*(Math.PI/180) );
         vector.applyAxisAngle( new THREE.Vector3( 1, 0, 0 ), (this.rotation.x-90)*(Math.PI/180) );
-        this.body.position.set(vector.x,vector.y+8,vector.z+0.7);
+        this.body.position.set(vector.x,vector.y,vector.z-0.7);
         if(vector.z < -2 && this.remainingBullets < 8){
             this.reload();
         }
@@ -718,7 +715,7 @@
         requestAnimationFrame( KingsGame.prototype.render );
         KingsGame.stats.update();
 
-        KingsGame.camera.updateMatrixWorld( true );
+        //KingsGame.camera.updateMatrixWorld( true );
         var newColor = KingsGame.clearPass.clearColor;
 		switch( KingsGame.params.clearColor ) {
 			case 'blue': newColor = 0x0000ff; break;
@@ -747,13 +744,12 @@
         if(KingsGame.ready) {
             Backbone.trigger( 'done' );
         }
-        KingsGame.renderer.clear();
+
         KingsGame.renderer.toneMappingExposure = Math.pow( KingsGame.params.exposure, 4.0 );
-        //KingsGame.controls.update( KingsGame.clock.getDelta() );
-        KingsGame.oculuscontrol.update( KingsGame.clock.getDelta() );
+        //KingsGame.oculuscontrol.update( KingsGame.clock.getDelta() );
         if(KingsGame.oculusShader) {
             //KingsGame.effect.render( KingsGame.scene, KingsGame.camera );
-
+            KingsGame.renderer.clear();
             KingsGame.renderer.setViewport( 0, 0, window.innerWidth / 2, window.innerHeight);
             KingsGame.renderPass.camera = KingsGame.stereoCamera.cameraL; //note: bending rule by setting RenderPass.camera directly without set/get methods
             KingsGame.composer.render();
@@ -765,10 +761,14 @@
             KingsGame.effect.setSize( window.innerWidth, window.innerHeight );
             KingsGame.renderer.setSize( window.innerWidth, window.innerHeight );
         } else {
-            KingsGame.composer.render();
-            //KingsGame.renderer.render( KingsGame.scene, KingsGame.camera );
-            KingsGame.effect.setSize( window.innerWidth, window.innerHeight );
-            KingsGame.renderer.setSize( window.innerWidth, window.innerHeight );
+            KingsGame.camera.rotation.x = xQ * (Math.PI / 180);
+            KingsGame.camera.rotation.y = yQ * (Math.PI / 180);
+            KingsGame.camera.rotation.z = zQ * (Math.PI / 180);
+            KingsGame.camera.updateMatrix();
+            KingsGame.oculusEffect.render(KingsGame.scene, KingsGame.camera);
+            //KingsGame.composer.render();
+            // KingsGame.effect.setSize( window.innerWidth, window.innerHeight );
+            // KingsGame.renderer.setSize( window.innerWidth, window.innerHeight );
         }
     };
 
@@ -781,9 +781,13 @@
                     blocker.style.display = 'none';
                     Backbone.trigger('HideScore');
                     KingsGame.paused = false;
-					KingsGame.controls.enabled = true;
+                    if(!KingsGame.oculusControlEnabled){
+    					KingsGame.controls.enabled = true;
+                    }
                 } else {
-					KingsGame.controls.enabled = false;
+                    if(!KingsGame.oculusControlEnabled){
+    					KingsGame.controls.enabled = false;
+                    }
                     // blocker.style.display = '-webkit-box';
                     // blocker.style.display = '-moz-box';
                     // blocker.style.display = 'box';
@@ -838,13 +842,16 @@
         KingsGame.assets.lavaUniforms.resolution.value.x = window.innerWidth;
 		KingsGame.assets.lavaUniforms.resolution.value.y = window.innerHeight;
         KingsGame.camera.aspect = window.innerWidth / window.innerHeight;
-        KingsGame.camera.updateProjectionMatrix();
+        //KingsGame.camera.updateProjectionMatrix();
         var pixelRatio = KingsGame.renderer.getPixelRatio();
 		var newWidth  = Math.floor( window.innerWidth / pixelRatio ) || 1;
 		var newHeight = Math.floor( window.innerHeight / pixelRatio ) || 1;
 		KingsGame.composer.setSize( newWidth, newHeight );
         KingsGame.effect.setSize( window.innerWidth, window.innerHeight );
-        KingsGame.controls.handleResize();
+        KingsGame.oculusEffect.setSize( window.innerWidth, window.innerHeight );
+        if(!KingsGame.oculusControlEnabled){
+            KingsGame.controls.handleResize();
+        }
         KingsGame.renderer.setSize( window.innerWidth, window.innerHeight );
         KingsGame.composer.reset();
     }
@@ -883,13 +890,6 @@
         switch(event.keyCode){
 
         case 67: // c
-            var elements = _.toArray(KingsGame.CAMERA_TYPES);
-            if (KingsGame.camera.type < elements.length - 1 ) {
-                KingsGame.camera.type++;
-            } else {
-                KingsGame.camera.type = 0;
-            }
-            break;
 
         case 82: //r
             break;
@@ -978,7 +978,7 @@
                 modelPath: './assets/models/ColtM1911/',
                 fileName: 'Colt',
                 useMTL: true,
-                position: new THREE.Vector3(0,10,0),
+                position: new THREE.Vector3(0,-10,0),
                 rotation: new THREE.Vector3(90,-180,0),
                 scale: new THREE.Vector3(0.3,0.3,0.3),
                 weight: 0,
@@ -1286,7 +1286,7 @@
 
         KingsGame.oculusShader = parameters.oculusShader;
         KingsGame.colorTracking = parameters.colorTracking;
-        KingsGame.start = false;
+        KingsGame.oculusControlEnabled = parameters.oculusControlEnabled;
 
         KingsGame.haptic = {
             pastRotation: new THREE.Vector3(),
@@ -1334,12 +1334,9 @@
 
                 var shoting = msg.substring(msg.indexOf("#TRI:")+5, msg.length-1);
                 KingsGame.haptic.trigger = parseInt(shoting);
-                if(KingsGame.start){
-                    if (KingsGame.haptic.trigger != 0 && KingsGame.haptic.trigger != KingsGame.haptic.pastTrigger) {
-                        KingsGame.gameobjects.player.shoot();
-                    }
-                } else {
-                    KingsGame.start = true;
+                console.log(KingsGame.haptic.trigger);
+                if (KingsGame.haptic.trigger != 0 && KingsGame.haptic.trigger != KingsGame.haptic.pastTrigger) {
+                    KingsGame.gameobjects.player.shoot();
                 }
                 KingsGame.haptic.pastTrigger = KingsGame.haptic.trigger;
             }
@@ -1379,8 +1376,8 @@
         });
         $(document.body).append( KingsGame.gameOverScreen.$el );
 
-        KingsGame.bodyAngle     = 0;
-        KingsGame.bodyAxis      = new THREE.Vector3(0, 1, 0);
+        KingsGame.bodyAngle     = 90 * (Math.PI/180);
+        KingsGame.bodyAxis      = new THREE.Vector3(1, 0, 0);
 
         KingsGame.OBJECTIVES = {
             "ground_figure": 0,
@@ -1461,8 +1458,9 @@
         uniforms.topColor.value.copy( hemiLight.color );
         KingsGame.scene.fog.color.copy( uniforms.bottomColor.value );
 
-        KingsGame.camera = new THREE.PerspectiveCamera( 75, (window.innerWidth/2)/(window.innerHeight/2), 0.1, 1000 );
+        KingsGame.camera = new THREE.PerspectiveCamera( 75, (window.innerWidth/2)/(window.innerHeight/2), 0.1, 2000 );
         KingsGame.camera.up = new THREE.Vector3(0,0,1);
+        //KingsGame.camera.position.set(8,-9,0);
         // KingsGame.camera.position.set(
         //     KingsGame.gameobjects.player.position.x,
         //     KingsGame.gameobjects.player.position.y-5,
@@ -1480,12 +1478,14 @@
 
         KingsGame.prototype.initLoadManager();
 
-        KingsGame.oculusController = new KingsGame.Oculus();
-        KingsGame.controls = new THREE.PointerLockControls(KingsGame.camera);
-        KingsGame.scene.add( KingsGame.controls.getObject() );
-
-        KingsGame.controls.getObject().translateY( 8 );
-		KingsGame.controls.getObject().translateZ( -9 );
+        if(KingsGame.oculusControlEnabled){
+            KingsGame.oculusController = new KingsGame.Oculus();
+        } else {
+            KingsGame.controls = new THREE.PointerLockControls(KingsGame.camera);
+            KingsGame.scene.add( KingsGame.controls.getObject() );
+            KingsGame.controls.getObject().translateY( 8 );
+    		KingsGame.controls.getObject().translateZ( -9 );
+        }
 
         var audioLoader = new THREE.AudioLoader(KingsGame.manager);
         var sound = new THREE.Audio( KingsGame.listener );
@@ -1530,6 +1530,9 @@
 			bloomRadius: 0.4
 		};
 
+        KingsGame.oculusEffect = new THREE.OculusRiftEffect(KingsGame.renderer, { worldScale: 1 } );
+        KingsGame.oculusEffect.setSize( window.innerWidth, window.innerHeight );
+
         KingsGame.effect = new THREE.StereoEffect( KingsGame.renderer );
         KingsGame.effect.setSize( window.innerWidth, window.innerHeight );
 
@@ -1563,7 +1566,7 @@
         KingsGame.bloomPass.strength = 1.2;
         KingsGame.bloomPass.radius = 0.2;
 
-        KingsGame.oculuscontrol = new THREE.OculusControls( KingsGame.camera );
+        //KingsGame.oculuscontrol = new THREE.OculusControls( KingsGame.camera );
 
         KingsGame.stats = new Stats();
 		$(this).append( KingsGame.stats.dom );
@@ -1573,7 +1576,7 @@
         document.addEventListener( 'keyup', KingsGame.prototype.onKeyUp, false );
         document.addEventListener( 'mousemove', KingsGame.prototype.onMouseMove, false );
 
-        KingsGame.oculuscontrol.connect();
+        //KingsGame.oculuscontrol.connect();
 
         KingsGame.prototype.loadAssets();
     };
