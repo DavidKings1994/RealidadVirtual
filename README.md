@@ -1,27 +1,20 @@
-<a target="_blank" href="https://chrome.google.com/webstore/detail/bdiclhdalonemjdeeaglackjgdboboem">![Try it now in CWS](https://raw.github.com/GoogleChrome/chrome-app-samples/master/tryitnowbutton.png "Click here to install this sample from the Chrome Web Store")</a>
+<a target="_blank" href="http://www.davidreyes.tk/">
+	<img src="ShootingSimulator/img/logo_128.png" height="50px" width="50px">
+</a>
 
+# Simulador de disparo
 
-# Arduino LED toggle
+## Descripción
+Este pequeño proyecto fue realizado para la materia de realidad virtual de la carrera de licenciado en multimedia y animacion digital de la facultad de ciencias fisico matematicas de la UANL.
 
-Note: on Mac OS X Lion, it's necessary to update USB Serial drivers:
-http://blog.geekscape.org/wordpress/2011/07/22/mac-os-x-17-lion-upgrading-ftdi-usb-serial-dr/
+Fue creado con three.js para la parte grafica y cannon.js como motor de fisica
 
-This sample shows a big button that lets you toggle between the on/off
-state of an LED connected to an Arduino.
+## Componentes
+El proyecto necesita 5 cosas para funcionar:
 
-1. Install the LED sketch on your Duo.
-2. Attach a LED to pin 2 (with a resistor to not burn it out).
-3. Install and launch this packaged app.
-4. Press the button to toggle the LED.
+1. el sitio web cargado en un servidor
+2. el haptico(arduino) conectado a la computadora
+3. la aplicacion de chrome corriendo 
+4. la aplicacion de windows Oculus bridge para que chrome pueda leer los datos del oculus
+5. el oculus conectado a la computadora (la computadora debe estar en modo duplicar pantallas)
 
-Future version: use the standard Firmata sketch and build a JS firmata driver
-for Chrome packaged apps.
-
-## APIs
-
-* [Serial API](http://developer.chrome.com/apps/app.hardware.html#serial)
-* [Runtime](http://developer.chrome.com/apps/app.runtime.html)
-* [Window](http://developer.chrome.com/apps/app.window.html)
-
-## Screenshot
-![screenshot](assets/screenshot_1280_800.png)
